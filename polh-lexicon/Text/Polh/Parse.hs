@@ -67,7 +67,8 @@ lexEntryP = (tag "LexicalEntry" *> getAttr "id") `join` \lexId -> do
     let senses = mapMaybe lexSense xs
     let related = mapMaybe lexRel xs
     return $ LexEntry
-        { lemma = lemma
+        { lexId = lexId
+        , lemma = lemma
         , forms = forms
         , senses = senses
         , related = related }
@@ -140,7 +141,7 @@ featP :: L.Text -> Parser T.Text
 featP att = L.toStrict <$>
     cut (tag "feat" *> hasAttr "att" att *> getAttr "val")
 
-parsePolh :: L.Text -> [LexEntry]
+parsePolh :: L.Text -> Polh
 parsePolh = parseXML lmfP
 
 parseLexEntry :: L.Text -> LexEntry

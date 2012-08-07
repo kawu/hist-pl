@@ -14,6 +14,7 @@ module Data.Polh.Types
 , Context (..)
 , Sense (..)
 , LexEntry (..)
+, Polh
 ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -83,7 +84,8 @@ instance Binary Sense where
     get = Sense <$> get <*> get
 
 data LexEntry = LexEntry
-    { lemma     :: Lemma
+    { lexId     :: T.Text
+    , lemma     :: Lemma
     , forms     :: [WordForm]
     , senses    :: [Sense]
     , related   :: [RelForm] }
@@ -91,8 +93,11 @@ data LexEntry = LexEntry
 
 instance Binary LexEntry where
     put LexEntry{..} = do
+        put lexId
         put lemma
         put forms
         put senses
         put related
-    get = LexEntry <$> get <*> get <*> get <*> get
+    get = LexEntry <$> get <*> get <*> get <*> get <*> get
+
+type Polh = [LexEntry]
