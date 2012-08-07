@@ -67,7 +67,7 @@ lexEntryP = (tag "LexicalEntry" *> getAttr "id") `join` \lexId -> do
     let senses = mapMaybe lexSense xs
     let related = mapMaybe lexRel xs
     return $ LexEntry
-        { lexId = lexId
+        { lexId = L.toStrict lexId
         , lemma = lemma
         , forms = forms
         , senses = senses

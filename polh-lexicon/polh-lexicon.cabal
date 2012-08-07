@@ -1,0 +1,18 @@
+Name:               polh-lexicon
+Version:            0.0.1
+Synopsis:           Interface to a historical dictionary of polish 
+License:            BSD3
+License-file:       LICENSE
+Author:             Jakub Waszczuk
+Maintainer:         waszczuk.kuba@gmail.com
+Build-type:         Simple
+Exposed-modules:    Data.Polh.Types
+		    Data.Polh.IO
+		    Text.Polh.Parse
+Build-Depends:      base
+                  , directory
+                  , filepath
+                  , text
+                  , binary
+                  , text-binary
+                  , polysoup
