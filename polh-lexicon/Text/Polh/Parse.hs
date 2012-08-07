@@ -60,7 +60,7 @@ lexEntryP = (tag "LexicalEntry" *> getAttr "id") `join` \lexId -> do
         , LexForm   <$> formP
         , LexRel    <$> relP
         , LexSense  <$> senseP
-        , LexOther  <$> lexOtherP ]
+        , LexOther  <$> otherP ]
     let fs = mapMaybe lexFeat xs
     let lemma = first "lexEntryP" (mapMaybe lexLemma xs)
     let forms = mapMaybe lexForm xs
@@ -92,13 +92,26 @@ relP = (tag "RelatedForm" *> getAttr "targets") `join` \relTo' -> do
         { relRepr = rs
         , relTo   = relTo }
 
-lexOtherP :: Parser ()
-lexOtherP = tagOpenName `join` \name ->
-    trace ("WARNING: tag " ++ L.unpack name ++ " ignored") ignore
+otherP :: Parser ()
+otherP = tagOpenName `join` \name ->
+    warning ("tag " ++ L.unpack name ++ " ignored") ignore
+
+warning :: String -> Parser a -> Parser a
+warning msg x = trace ("WARNING: " ++ msg) x
+
+warning' :: String -> a -> Parser a
+warning' msg x = warning msg (return x)
+
+grave :: String -> Parser a -> Parser a
+grave msg x = trace ("ERROR: " ++ msg) x
+
+grave' :: String -> a -> Parser a
+grave' msg x = grave msg (return x)
 
 data SenseContent
     = SenseDef Definition
     | SenseCxt Context
+    | SenseOther ()
 
 senseDef :: SenseContent -> Maybe Definition
 senseDef (SenseDef def) = Just def
@@ -111,8 +124,9 @@ senseCxt _              = Nothing
 senseP :: Parser Sense
 senseP = tag "Sense" `joinR` do
     xs <- many $ oneOf
-        [ SenseDef  <$> defP
-        , SenseCxt  <$> cxtP ]
+        [ SenseDef      <$> defP
+        , SenseCxt      <$> cxtP
+        , SenseOther    <$> otherP ]
     let defs = mapMaybe senseDef xs
     let cxts = mapMaybe senseCxt xs
     return $ Sense
@@ -129,8 +143,8 @@ reprP :: Parser Repr
 reprP = (tag "FormRepresentation" <|> tag "TextRepresentation") `joinR`
   ( Repr
     <$> featP "writtenForm"
-    <*> featP "language"
-    <*> featP "sourceID" )
+    <*> (featP "language" <|> grave' "language not specified" "polh")
+    <*> (featP "sourceID" <|> grave' "sourceID not specified" "srpsdp") )
 
 anyFeatP :: Parser (T.Text, T.Text)
 anyFeatP = cut $ tag "feat" *> ( (,)

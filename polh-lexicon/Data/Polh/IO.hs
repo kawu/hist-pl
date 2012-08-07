@@ -23,7 +23,7 @@ doesExist :: FilePath -> IO Bool
 doesExist path = do
     x <- doesFileExist path
     y <- doesDirectoryExist path
-    return (x && y)
+    return (x || y)
 
 loadIndex :: FilePath -> IO [Key]
 loadIndex path = do
