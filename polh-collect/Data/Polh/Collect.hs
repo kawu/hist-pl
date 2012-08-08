@@ -159,8 +159,11 @@ pushWord polh src lexId entry word = do
           , Polh.language    = "polh"
           , Polh.sourceID    = src `T.append` "#automatic" }
     let form = Polh.WordForm [repr]
-    Polh.updateLexEntry_ polh (T.unpack lexId) (Polh.addForm form)
+    Polh.updateLexEntry_ polh (T.unpack lexId) (addFormSafe form)
   where
     word' = if isLower (head entry)
         then map toLower word
         else toUpper (head word) : map toLower (tail word)
+    addFormSafe form lex
+        | Polh.hasForm lex form = lex
+        | otherwise = Polh.addForm form lex
