@@ -13,6 +13,7 @@ Library
                       Data.Polh.IO
                       Data.Polh.Util
                       Text.Polh.Parse
+                      Text.Polh.Show
   Build-Depends:      base
                     , directory
                     , filepath
