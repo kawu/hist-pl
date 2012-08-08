@@ -1,5 +1,6 @@
 Name:               polh-collect
 Version:            0.0.1
+Cabal-Version:      >= 1.2
 Synopsis:           Interface to a historical dictionary of polish 
 License:            BSD3
 License-file:       LICENSE
@@ -7,14 +8,20 @@ Author:             Jakub Waszczuk
 Maintainer:         waszczuk.kuba@gmail.com
 Build-type:         Simple
 
-Exposed-modules:    Data.Polh.Collect
-Build-Depends:      base
-                  , vector
-                  , text
-                  , mtl
-                  , transformers
-                  , polh-lexicon
-                  , tokenize
-                  , transcription
-                  , adict
-                  , polish-language-resources
+Library
+  Exposed-modules:    Data.Polh.Collect
+  Build-Depends:      base
+                    , binary
+                    , vector
+                    , text
+                    , mtl
+                    , transformers
+                    , polh-lexicon
+                    , tokenize
+                    , transcription
+                    , adict
+                    , polish-language-resources
+
+Executable polh-collect
+  Hs-Source-Dirs: ., tools
+  Main-is: polh-collect.hs

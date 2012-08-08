@@ -112,8 +112,7 @@ collect
     -> String   -- ^ Plain text, from which new forms will be collected
     -> IO ()    -- ^ New forms are stored in a binary lexicon
 collect polh poliHist src input = do 
-    toks <- mapMaybe Tok.unOrth . Tok.tokenize . Tok.unHyphen
-        <$> readFile input
+    let toks = mapMaybe Tok.unOrth (Tok.tokenize input)
     -- let xs = mapMaybe orth (withContexts 10 xs)
     --    where orth (x, l, r) = (, l, r) <$> Tok.unOrth x
     -- forM_ xs $ \(tok, left, right) -> runMaybeT $ do
@@ -165,23 +164,3 @@ pushWord polh src lexId entry word = do
     word' = if isLower (head entry)
         then map toLower word
         else toUpper (head word) : map toLower (tail word)
-
-getLogin :: IO String
-getLogin = do
-    putStr "Login: "
-    hFlush stdout
-    login <- getLine
-    return login
-
-getPassword :: IO String
-getPassword = do
-    putStr "Password: "
-    hFlush stdout
-    pass <- withEcho False getLine
-    putChar '\n'
-    return pass
-
-withEcho :: Bool -> IO a -> IO a
-withEcho echo action = do
-    old <- hGetEcho stdin
-    bracket_ (hSetEcho stdin echo) (hSetEcho stdin old) action
