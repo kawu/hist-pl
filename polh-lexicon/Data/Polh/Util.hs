@@ -1,6 +1,7 @@
 module Data.Polh.Util
 ( allForms
 , hasForm
+, addForm
 ) where
 
 import qualified Data.Text as T
