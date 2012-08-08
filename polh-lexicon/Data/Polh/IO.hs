@@ -8,7 +8,8 @@ module Data.Polh.IO
 , lexKey
 ) where
 
-import Control.Monad (forM_, forM)
+import Control.Monad (forM_)
+import Control.Monad.Lazy (forM)
 import Control.Applicative ((<$>), (<*>))
 import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, doesFileExist

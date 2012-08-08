@@ -22,7 +22,12 @@ Library
                     , text-binary
                     , polysoup
                     , data-lens
+                    , lazy-io
 
-Executable binarize-polh-lmf
+Executable polh-binarize
   Hs-Source-Dirs: ., tools
-  Main-is: binarize-polh-lmf.hs
+  Main-is: polh-binarize.hs
+
+Executable polh-show
+  Hs-Source-Dirs: ., tools
+  Main-is: polh-show.hs
