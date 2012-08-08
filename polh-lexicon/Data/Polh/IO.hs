@@ -4,6 +4,7 @@ module Data.Polh.IO
 , loadIndex
 , loadLexEntry
 , updateLexEntry
+, updateLexEntry_
 , lexKey
 ) where
 
