@@ -21,11 +21,11 @@ import Data.Polh.Types
 
 type Key = String
 
-doesExist :: FilePath -> IO Bool
-doesExist path = do
-    x <- doesFileExist path
-    y <- doesDirectoryExist path
-    return (x || y)
+-- doesExist :: FilePath -> IO Bool
+-- doesExist path = do
+--     x <- doesFileExist path
+--     y <- doesDirectoryExist path
+--     return (x || y)
 
 loadIndex :: FilePath -> IO [Key]
 loadIndex path = do
@@ -38,9 +38,9 @@ lexKey = T.unpack . lexId
 saveOne :: Binary a => FilePath -> Key -> a -> IO ()
 saveOne path elemId x = do
     let filePath = path </> elemId
-    doesExist filePath >>= \b -> case b of
-        True  -> fail (filePath ++ " already exists")
-        False -> return ()
+--     doesExist filePath >>= \b -> case b of
+--         True  -> fail (filePath ++ " already exists")
+--         False -> return ()
     encodeFile filePath x
 
 -- | Save a list of serializable values to a disk. Identification function
