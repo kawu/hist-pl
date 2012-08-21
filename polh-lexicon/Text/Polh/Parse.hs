@@ -30,20 +30,13 @@ lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
   \lexId -> collTags >>=
   \tags  -> return $
     let with p = tagsParseXml (findAll p) tags
-        senses = with senseP
-        syntactic = 
-            [ SynBehaviour reprs
-                [ sense | sense <- senses
-                , Just id <- [senseId sense]
-                , id `elem` senseIds ]
-            | (reprs, senseIds) <- with synP ]
     in  LexEntry
         { lexId         = L.toStrict lexId
         , lemma         = first "lexEntryP" (with lemmaP)
         , forms         = with formP
         , components    = join (with compoP)
-        , syntactic     = syntactic
-        , senses        = senses
+        , syntactic     = with synP
+        , senses        = with senseP
         , related       = with relP }
     
 first :: Show a => String -> [a] -> a
@@ -83,10 +76,11 @@ grave msg x = trace ("ERROR: " ++ msg) x
 grave' :: String -> a -> Parser a
 grave' msg x = grave msg (return x)
 
-synP :: Parser ([Repr], [T.Text])
+synP :: Parser SynBehaviour
 synP = tag "SyntacticBehaviour" *> getAttr "senses" >^> \senses -> do
     repr <- reprBodyP
-    return ([repr], T.words (L.toStrict senses))
+    let senseIds = T.words (L.toStrict senses)
+    return (SynBehaviour [repr] senseIds)
 
 data SenseContent
     = SenseDef Definition

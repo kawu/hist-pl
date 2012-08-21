@@ -6,6 +6,7 @@ module Text.Polh.Show
 ) where
 
 import Data.Monoid (Monoid, mempty, mappend, mconcat)
+import Data.List (intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
@@ -37,76 +38,102 @@ showLexEntry :: LexEntry -> L.Text
 showLexEntry =
     L.toLazyText . mconcat . map (<> "\n") . buildLexEntry
 
+buildElem :: L.Builder -> [L.Builder] -> L.Builder -> [L.Builder]
+buildElem beg body end = beg : map ident body ++ [end] 
+
 -- | Each output line is represented as a builder. We use separate builders
 -- for separate lines because we want to easilly indent the output text.
 buildLexEntry :: LexEntry -> [L.Builder]
 buildLexEntry lex =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<LexicalEntry id=\"" <> L.fromText (lexId lex) <> "\">"
-    tagEnd = "</LexicalEntry>"
+    beg = "<LexicalEntry id=\"" <> L.fromText (lexId lex) <> "\">"
+    end = "</LexicalEntry>"
     body
         =  buildLemma (lemma lex)
         ++ concatMap buildForm (forms lex)
         ++ concatMap buildRelForm (related lex)
+        ++ buildComps (components lex)
+        ++ concatMap buildSyn (syntactic lex)
         ++ concatMap buildSense (senses lex)
 
 buildLemma :: Lemma -> [L.Builder]
 buildLemma lemma =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<Lemma>"
-    tagEnd = "</Lemma>"
+    beg = "<Lemma>"
+    end = "</Lemma>"
     body = concatMap (buildRepr "FormRepresentation") (repr lemma)
 
 buildForm :: WordForm -> [L.Builder]
 buildForm form =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<WordForm>"
-    tagEnd = "</WordForm>"
+    beg = "<WordForm>"
+    end = "</WordForm>"
     body = concatMap (buildRepr "FormRepresentation") (repr form)
 
 buildRelForm :: RelForm -> [L.Builder]
 buildRelForm form =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<RelatedForm targets=\"" <> L.fromText (relTo form) <> "\">"
-    tagEnd = "</RelatedForm>"
+    beg = "<RelatedForm targets=\"" <> L.fromText (relTo form) <> "\">"
+    end = "</RelatedForm>"
     body = concatMap (buildRepr "FormRepresentation") (repr form)
+
+buildComps :: [T.Text] -> [L.Builder]
+buildComps [] = []
+buildComps xs =
+    buildElem beg body end
+  where
+    beg = "<ListOfComponents>"
+    end = "</ListOfComponents>"
+    body = map comp xs
+    comp x = "<Component entry=\"" <> L.fromText x <> "\"/>"
+
+buildSyn :: SynBehaviour -> [L.Builder]
+buildSyn syn =
+    buildElem beg body end
+  where
+    ids = mconcat . intersperse " " . map L.fromText $ synSenseIds syn
+    beg = "<SyntacticBehaviour senses=\"" <> ids <> "\">"
+    end = "</SyntacticBehaviour>"
+    body = concatMap (buildRepr "TextRepresentation") (repr syn)
 
 buildSense :: Sense -> [L.Builder]
 buildSense sense =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<Sense>"
-    tagEnd = "</Sense>"
+    beg = case senseId sense of
+        Just id -> "<Sense id=\"" <> L.fromText id <> "\">"
+        Nothing -> "<Sense>"
+    end = "</Sense>"
     body
         =  concatMap buildDef (defs sense)
         ++ concatMap buildCxt (cxts sense)
 
 buildDef :: Definition -> [L.Builder]
 buildDef def =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<Definition>"
-    tagEnd = "</Definition>"
+    beg = "<Definition>"
+    end = "</Definition>"
     body = concatMap (buildRepr "TextRepresentation") (repr def)
 
 buildCxt :: Context -> [L.Builder]
 buildCxt cxt =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<Context>"
-    tagEnd = "</Context>"
+    beg = "<Context>"
+    end = "</Context>"
     body = concatMap (buildRepr "TextRepresentation") (repr cxt)
 
 buildRepr :: L.Builder -> Repr -> [L.Builder]
 buildRepr tag repr =
-    tagBeg : map ident body ++ [tagEnd]
+    buildElem beg body end
   where
-    tagBeg = "<"  <> tag <> ">"
-    tagEnd = "</" <> tag <> ">"
+    beg = "<"  <> tag <> ">"
+    end = "</" <> tag <> ">"
     body =
         [ buildFeat "writtenForm" (writtenForm repr)
         , buildFeat "language" (language repr)

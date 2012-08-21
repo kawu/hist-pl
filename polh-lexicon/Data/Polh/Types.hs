@@ -74,8 +74,8 @@ newtype Context = Context [Repr]
     deriving (Show, Read, Eq, Ord, Binary, HasRepr)
 
 data SynBehaviour = SynBehaviour
-    { synRepr   :: [Repr]
-    , synSenses :: [Sense] }
+    { synRepr     :: [Repr]
+    , synSenseIds :: [T.Text] }
     deriving (Show, Read, Eq, Ord)
 
 instance HasRepr SynBehaviour where
@@ -84,7 +84,7 @@ instance HasRepr SynBehaviour where
 instance Binary SynBehaviour where
     put SynBehaviour{..} = do
         put synRepr
-        put synSenses
+        put synSenseIds
     get = SynBehaviour <$> get <*> get
 
 data Sense = Sense
@@ -107,7 +107,7 @@ data LexEntry = LexEntry
     , components    :: [T.Text] -- ^ List of components
     , syntactic     :: [SynBehaviour]
     , senses        :: [Sense]
-    , related       :: [RelForm]}
+    , related       :: [RelForm] }
     deriving (Show, Read, Eq, Ord)
 
 instance Binary LexEntry where
