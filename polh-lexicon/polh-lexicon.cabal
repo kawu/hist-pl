@@ -20,7 +20,7 @@ Library
                     , text
                     , binary
                     , text-binary
-                    , polysoup
+                    , polysoup >= 0.1
                     , data-lens
                     , lazy-io
 
