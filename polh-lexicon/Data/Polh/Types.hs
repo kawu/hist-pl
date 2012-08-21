@@ -12,6 +12,7 @@ module Data.Polh.Types
 , RelForm (..)
 , Definition (..)
 , Context (..)
+, SynBehaviour (..)
 , Sense (..)
 , LexEntry (..)
 , Polh
@@ -72,23 +73,41 @@ newtype Definition = Definition [Repr]
 newtype Context = Context [Repr]
     deriving (Show, Read, Eq, Ord, Binary, HasRepr)
 
+data SynBehaviour = SynBehaviour
+    { synRepr   :: [Repr]
+    , synSenses :: [Sense] }
+    deriving (Show, Read, Eq, Ord)
+
+instance HasRepr SynBehaviour where
+    repr = synRepr
+
+instance Binary SynBehaviour where
+    put SynBehaviour{..} = do
+        put synRepr
+        put synSenses
+    get = SynBehaviour <$> get <*> get
+
 data Sense = Sense
-    { defs  :: [Definition]
-    , cxts  :: [Context] }
+    { senseId   :: Maybe T.Text
+    , defs      :: [Definition]
+    , cxts      :: [Context] }
     deriving (Show, Read, Eq, Ord)
 
 instance Binary Sense where
     put Sense{..} = do
+        put senseId
         put defs
         put cxts
-    get = Sense <$> get <*> get
+    get = Sense <$> get <*> get <*> get
 
 data LexEntry = LexEntry
-    { lexId     :: T.Text
-    , lemma     :: Lemma
-    , forms     :: [WordForm]
-    , senses    :: [Sense]
-    , related   :: [RelForm] }
+    { lexId         :: T.Text
+    , lemma         :: Lemma
+    , forms         :: [WordForm]
+    , components    :: [T.Text] -- ^ List of components
+    , syntactic     :: [SynBehaviour]
+    , senses        :: [Sense]
+    , related       :: [RelForm]}
     deriving (Show, Read, Eq, Ord)
 
 instance Binary LexEntry where
@@ -96,8 +115,10 @@ instance Binary LexEntry where
         put lexId
         put lemma
         put forms
+        put components
+        put syntactic
         put senses
         put related
-    get = LexEntry <$> get <*> get <*> get <*> get <*> get
+    get = LexEntry <$> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 type Polh = [LexEntry]
