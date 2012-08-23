@@ -15,6 +15,7 @@ data Args = Args
     { polhBinPath   :: FilePath
     , dawgPath      :: FilePath
     , inputPath     :: FilePath
+    , sourceID      :: String
     , doUnHyphen    :: Bool
     , doTranscript  :: Bool }
 
@@ -23,6 +24,7 @@ argsP = Args
     <$> argument str ( metavar "POLH-BINARY" )
     <*> argument str ( metavar "POLI-HIST-DAWG" )
     <*> argument str ( metavar "INPUT" )
+    <*> argument str ( metavar "SRC-ID" )
     <*> switch
         ( long "unHyphen"
         & short 'u'
@@ -56,4 +58,4 @@ doCollect Args{..} = do
 
     let h = if doUnHyphen then unHyphen else id
     xs <- h <$> readFile inputPath
-    collect polhBinPath poliHist "impact" doTranscript xs
+    collect polhBinPath poliHist (T.pack sourceID) doTranscript xs
