@@ -16,7 +16,7 @@ import Control.Monad (forM_, when, guard)
 import Control.Monad.Trans.Maybe (runMaybeT, MaybeT (..))
 import Control.Monad.Trans (lift)
 import Control.Exception (bracket_)
-import Data.List (intercalate, minimumBy, sortBy)
+import Data.List (intercalate, minimumBy, sortBy, mapAccumL, tails)
 import Data.Maybe (listToMaybe, mapMaybe)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V
@@ -109,25 +109,31 @@ collect
     :: FilePath -- ^ Path to a binary polh lexicon
     -> HistDict -- ^ Poli-hist DAWG
     -> T.Text   -- ^ Input identifier (will be stored in binary lexicon)
+    -> Bool     -- ^ Should the input text be transcripted
     -> String   -- ^ Plain text, from which new forms will be collected
     -> IO ()    -- ^ New forms are stored in a binary lexicon
-collect polh poliHist src input = do 
-    let toks = mapMaybe Tok.unOrth (Tok.tokenize input)
-    -- let xs = mapMaybe orth (withContexts 10 xs)
-    --    where orth (x, l, r) = (, l, r) <$> Tok.unOrth x
-    -- forM_ xs $ \(tok, left, right) -> runMaybeT $ do
-    forM_ toks $ \tok -> runMaybeT $ do
-        let tokTr = transcript rules tok
+collect polh poliHist src doTrans input = do
+    -- let toks = mapMaybe Tok.unOrth (Tok.tokenize input)
+    let cxts = mapMaybe unOrth . contexts 5 . Tok.tokenize $ input
+            where unOrth (l, x, r) = (l, , r) <$> Tok.unOrth x
+    -- forM_ toks $ \tok -> runMaybeT $ do
+    forM_ cxts $ \(left, tok, right) -> runMaybeT $ do
+        let tokTr = if doTrans
+                then transcript rules tok
+                else tok
         (path, info, w)  <- maybe (doSearch poliHist tokTr)
         (lexId, relCode) <- maybe info
         guard (w > 0)
         guard (map toLower tokTr /= map toLower path)
         lift $ putStr $ "[" ++ T.unpack lexId ++ "] "
-        lift $ putStr $ tok ++ " => " ++ tokTr ++ " => "
+        if doTrans 
+            then lift $ putStr $ tok ++ " => " ++ tokTr ++ " => "
+            else lift $ putStr $ tok ++ " => "
         lift $ putStrLn $ path ++ " (" ++ show w ++ ", " ++ show relCode ++ ")"
-        lift $ pushWord polh src lexId path tokTr
+        lift $ pushWord polh src lexId (norm path tokTr)
         -- lift $ pushContext lexId ...
   where
+    norm entry = T.pack . normWord entry
     doSearch poliHist x = 
         let n = length x
         in  search (cost n) (threshold thBase n) (V.fromList x) poliHist
@@ -145,25 +151,48 @@ tokStr =
     toSpace (Tok.Space _) = Tok.Space " "
     toSpace x = x
 
--- -- | Given right and left context size, input [a] list, return a list
--- -- of elements with right and left contexts.
--- withContexts :: Int -> [a] -> [(a, [a], [a])]
--- withContexts k xs =
+-- | Given right and left context size, input [a] list, return a list
+-- of elements with right and left contexts of given size.
+contexts :: Int -> [a] -> [([a], a, [a])]
+contexts k =
+    let f sx (x:xs) = (take k (x:sx), (reverse sx, x, take k xs))
+    in  snd . mapAccumL f [] . init . tails
+
+-- flattenContext :: ([a], a, [a]) -> [a]
+-- flattenContext (xs, x, ys) = xs ++ (x:ys)
+
+-- | "Normalize" word with respect to dictionary entry.
+normWord :: String -> String -> String
+normWord entry word =
+    if isLower (head entry)
+        then map toLower word
+        else toUpper (head word) : map toLower (tail word)
 
 -- | Send word to basex server as a form of a given entry with given
 -- lexical entry identifier.
-pushWord :: FilePath -> T.Text -> T.Text -> String -> String -> IO ()
-pushWord polh src lexId entry word = do
+pushWord :: FilePath -> T.Text -> T.Text -> T.Text -> IO ()
+pushWord polh src lexId word = do
     let repr = Polh.Repr
-          { Polh.writtenForm = wordL
+          { Polh.writtenForm = word
           , Polh.language    = "polh"
           , Polh.sourceID    = src `T.append` "#automatic" }
     let form = Polh.WordForm [repr]
     Polh.updateLexEntry_ polh (T.unpack lexId) (addFormSafe form)
   where
-    wordL = T.pack $ if isLower (head entry)
-        then map toLower word
-        else toUpper (head word) : map toLower (tail word)
     addFormSafe form lex
-        | lex `Polh.hasForm` wordL = lex
+        | lex `Polh.hasForm` word = lex
         | otherwise = Polh.addForm form lex
+
+-- pushContext :: FilePath -> T.Text -> T.Text -> T.Text
+-- pushContext polh src lexId context = do
+--     let repr = Polh.Repr
+--           { Polh.writtenForm = context
+--           , Polh.language    = "polh"
+--           , Polh.sourceID    = src `T.append` "#automatic" }
+--     let wrapContext = Polh.WordForm [repr]
+--     Polh.updateLexEntry_ polh (T.unpack lexId) (addContextSafe wrapContext)
+--   where
+--     addContextSafe context lex
+--         | (length . concatMap Polh.cxts . Polh.senses $ lex = lex
+--         | lex `Polh.hasForm` word = lex
+--         | otherwise = Polh.addForm form lex

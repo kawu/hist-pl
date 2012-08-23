@@ -25,3 +25,4 @@ Library
 Executable polh-collect
   Hs-Source-Dirs: ., tools
   Main-is: polh-collect.hs
+  Build-Depends:      optparse-applicative
