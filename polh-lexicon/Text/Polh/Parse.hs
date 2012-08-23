@@ -32,7 +32,8 @@ lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
     let with p = tagsParseXml (findAll p) tags
     in  LexEntry
         { lexId         = L.toStrict lexId
-        , lemma         = first "lexEntryP" (with lemmaP)
+        , pos           = with posP
+        , lemma         = first "lemmaP" (with lemmaP)
         , forms         = with formP
         , components    = join (with compoP)
         , syntactic     = with synP
@@ -43,6 +44,9 @@ first :: Show a => String -> [a] -> a
 first src [x] = x
 first src []  = error $ src ++ ": null xs"
 first src xs  = error $ src ++ ": xs == " ++ show xs
+
+posP :: Parser T.Text
+posP = featP "partOfSpeech"
 
 lemmaP :: Parser Lemma
 lemmaP = Lemma <$> (tag "Lemma" /> reprP)

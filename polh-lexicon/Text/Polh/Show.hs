@@ -50,7 +50,8 @@ buildLexEntry lex =
     beg = "<LexicalEntry id=\"" <> L.fromText (lexId lex) <> "\">"
     end = "</LexicalEntry>"
     body
-        =  buildLemma (lemma lex)
+        =  map (buildFeat "partOfSpeech") (pos lex)
+        ++ buildLemma (lemma lex)
         ++ concatMap buildForm (forms lex)
         ++ concatMap buildRelForm (related lex)
         ++ buildComps (components lex)

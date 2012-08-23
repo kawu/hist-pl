@@ -102,6 +102,7 @@ instance Binary Sense where
 
 data LexEntry = LexEntry
     { lexId         :: T.Text
+    , pos           :: [T.Text]
     , lemma         :: Lemma
     , forms         :: [WordForm]
     , components    :: [T.Text] -- ^ List of components
@@ -113,12 +114,14 @@ data LexEntry = LexEntry
 instance Binary LexEntry where
     put LexEntry{..} = do
         put lexId
+        put pos
         put lemma
         put forms
         put components
         put syntactic
         put senses
         put related
-    get = LexEntry <$> get <*> get <*> get <*> get <*> get <*> get <*> get
+    get = LexEntry <$> get <*> get <*> get <*> get
+                   <*> get <*> get <*> get <*> get
 
 type Polh = [LexEntry]
