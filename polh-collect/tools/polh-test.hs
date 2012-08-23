@@ -7,7 +7,6 @@ import Data.Binary (decodeFile)
 
 import Data.PoliMorf (RelCode(..))
 import Data.DAWG.Array (DAWGArray, size)
-import Text.Tokenize.Util.String (unHyphen)
 
 import Data.Polh.Collect (search, HistDict)
 

@@ -4,9 +4,10 @@
 
 module Data.Polh.Collect
 ( HistDict
-, cost
+, costOrd
 , search
 , collect
+, pushWord
 ) where
 
 import System.IO
@@ -54,8 +55,8 @@ thBase = 0.1
 lowerEqWeight :: Double
 lowerEqWeight = 0.1
 
-cost :: Int -> CostOrd
-cost n =
+costOrd :: Int -> CostOrd
+costOrd n =
 
     CostOrd insert delete subst posMod
 
@@ -112,7 +113,7 @@ subDscMap = mkSDM $ concatMap (uncurry mkGroup)
 search :: DAWGArray (Maybe a) -> Double -> String -> Maybe (String, a, Double)
 search poliHist k x = 
     let n = length x
-    in  Adict.search (cost n) k (V.fromList x) poliHist
+    in  Adict.search (costOrd n) k (V.fromList x) poliHist
 
 collect
     :: FilePath -- ^ Path to a binary polh lexicon
@@ -130,17 +131,16 @@ collect polh poliHist src doTrans input = do
                 else tok
         (path, info, w)  <- maybe (doSearch poliHist tokTr)
         (lexIds, relCode) <- maybe info
-        forM_ lexIds $ \lexId -> do
-            lift $ putStr $ "[" ++ T.unpack lexId ++ "] "
+        lift $ forM_ lexIds $ \lexId -> do
+            putStr $ "[" ++ T.unpack lexId ++ "] "
             if doTrans 
-                then lift . putStr $ tok ++ " => " ++ tokTr ++ " => "
-                else lift . putStr $ tok ++ " => "
-            lift . putStrLn $
+                then putStr $ tok ++ " => " ++ tokTr ++ " => "
+                else putStr $ tok ++ " => "
+            putStrLn $
                 path ++ " (" ++ show w ++ ", " ++ show relCode ++ ")"
-            lift $ pushWord polh src lexId (norm path tokTr)
+            pushWord polh src lexId (T.pack tokTr)
   where
     maybe = MaybeT . return
-    norm entry = T.pack . normWord entry
     doSearch poliHist x =
         let n = length x
         in  search poliHist (threshold thBase n) x
@@ -168,26 +168,27 @@ contexts k =
 -- flattenContext (xs, x, ys) = xs ++ (x:ys)
 
 -- | "Normalize" word with respect to dictionary entry.
-normWord :: String -> String -> String
+normWord :: T.Text -> T.Text -> T.Text
 normWord entry word =
-    if isLower (head entry)
-        then map toLower word
-        else toUpper (head word) : map toLower (tail word)
+    if isLower (T.head entry)
+        then T.map toLower word
+        else toUpper (T.head word) `T.cons` T.map toLower (T.tail word)
 
 -- | Send word to basex server as a form of a given entry with given
 -- lexical entry identifier.
 pushWord :: FilePath -> T.Text -> T.Text -> T.Text -> IO ()
-pushWord polh src lexId word = do
+pushWord polh src lexId wordRaw = do
+    lex <- Polh.loadLexEntry polh (T.unpack lexId)
+    let word = normWord (head $ Polh.allForms lex) wordRaw
     let repr = Polh.Repr
           { Polh.writtenForm = word
           , Polh.language    = "polh"
           , Polh.sourceID    = src `T.append` "#automatic" }
     let form = Polh.WordForm [repr]
+    let addFormSafe form lex
+            | lex `Polh.hasForm` word = lex
+            | otherwise = Polh.addForm form lex
     Polh.updateLexEntry_ polh (T.unpack lexId) (addFormSafe form)
-  where
-    addFormSafe form lex
-        | lex `Polh.hasForm` word = lex
-        | otherwise = Polh.addForm form lex
 
 -- pushContext :: FilePath -> T.Text -> T.Text -> T.Text
 -- pushContext polh src lexId context = do
