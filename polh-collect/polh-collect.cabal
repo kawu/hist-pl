@@ -26,3 +26,8 @@ Executable polh-collect
   Hs-Source-Dirs: ., tools
   Main-is: polh-collect.hs
   Build-Depends:      optparse-applicative
+
+Executable polh-extract-contexts
+  Hs-Source-Dirs: ., tools
+  Main-is: polh-extract-contexts.hs
+  Build-Depends:      optparse-applicative
