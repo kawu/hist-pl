@@ -45,7 +45,7 @@ type ID = T.Text
 type HistDict = DAWGArray (Maybe (Maybe ([ID], RelCode)))
 
 -- | Threshold base. See cost definition for details of how is it used.
-thBase = 0.1
+thBase = 0.2
 
 -- decodeDict :: FilePath -> IO HistDict
 -- decodeDict = decodeFile
