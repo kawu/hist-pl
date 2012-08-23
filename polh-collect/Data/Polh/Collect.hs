@@ -3,7 +3,10 @@
 {-# LANGUAGE TupleSections #-}
 
 module Data.Polh.Collect
-( collect
+( HistDict
+, cost
+, search
+, collect
 ) where
 
 import System.IO
@@ -24,7 +27,7 @@ import qualified Data.Vector.Unboxed as V
 import Data.PoliMorf (RelCode(..))
 import Data.DAWG.Array (DAWGArray, size)
 import Data.Adict.CostOrd
-import Data.Adict.ShortestPath (search)
+import qualified Data.Adict.ShortestPath as Adict
 
 import qualified Data.Token as Tok
 import qualified Text.Tokenize.Simple.String as Tok
@@ -38,7 +41,7 @@ import qualified Data.Polh.IO as Polh
 import qualified Data.Polh.Util as Polh
 
 type ID = T.Text
-type HistDict = DAWGArray (Maybe (Maybe (ID, RelCode)))
+type HistDict = DAWGArray (Maybe (Maybe ([ID], RelCode)))
 
 -- | Threshold base. See cost definition for details of how is it used.
 thBase = 0.1
@@ -105,6 +108,12 @@ subDscMap = mkSDM $ concatMap (uncurry mkGroup)
           , (x, toUpper y, w + lowerEqWeight) ]
         | x <- xs , y <- xs , x /= y ]
 
+-- | Approximate search using the cost function defined above.
+search :: DAWGArray (Maybe a) -> Double -> String -> Maybe (String, a, Double)
+search poliHist k x = 
+    let n = length x
+    in  Adict.search (cost n) k (V.fromList x) poliHist
+
 collect
     :: FilePath -- ^ Path to a binary polh lexicon
     -> HistDict -- ^ Poli-hist DAWG
@@ -113,34 +122,31 @@ collect
     -> String   -- ^ Plain text, from which new forms will be collected
     -> IO ()    -- ^ New forms are stored in a binary lexicon
 collect polh poliHist src doTrans input = do
-    -- let toks = mapMaybe Tok.unOrth (Tok.tokenize input)
     let cxts = mapMaybe unOrth . contexts 5 . Tok.tokenize $ input
             where unOrth (l, x, r) = (l, , r) <$> Tok.unOrth x
-    -- forM_ toks $ \tok -> runMaybeT $ do
     forM_ cxts $ \(left, tok, right) -> runMaybeT $ do
         let tokTr = if doTrans
                 then transcript rules tok
                 else tok
         (path, info, w)  <- maybe (doSearch poliHist tokTr)
-        (lexId, relCode) <- maybe info
-        guard (w > 0)
-        guard (map toLower tokTr /= map toLower path)
-        lift $ putStr $ "[" ++ T.unpack lexId ++ "] "
-        if doTrans 
-            then lift $ putStr $ tok ++ " => " ++ tokTr ++ " => "
-            else lift $ putStr $ tok ++ " => "
-        lift $ putStrLn $ path ++ " (" ++ show w ++ ", " ++ show relCode ++ ")"
-        lift $ pushWord polh src lexId (norm path tokTr)
-        -- lift $ pushContext lexId ...
+        (lexIds, relCode) <- maybe info
+        forM_ lexIds $ \lexId -> do
+            lift $ putStr $ "[" ++ T.unpack lexId ++ "] "
+            if doTrans 
+                then lift . putStr $ tok ++ " => " ++ tokTr ++ " => "
+                else lift . putStr $ tok ++ " => "
+            lift . putStrLn $
+                path ++ " (" ++ show w ++ ", " ++ show relCode ++ ")"
+            lift $ pushWord polh src lexId (norm path tokTr)
   where
+    maybe = MaybeT . return
     norm entry = T.pack . normWord entry
-    doSearch poliHist x = 
+    doSearch poliHist x =
         let n = length x
-        in  search (cost n) (threshold thBase n) (V.fromList x) poliHist
+        in  search poliHist (threshold thBase n) x
     threshold base n
         | n > 10    = base * 10
         | otherwise = base * fromIntegral n
-    maybe = MaybeT . return
 
 -- | Make string from a token list. All space-like characters (including
 -- newline) are changed to a plain space.

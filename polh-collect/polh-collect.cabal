@@ -22,6 +22,11 @@ Library
                     , adict
                     , polish-language-resources
 
+Executable polh-test
+  Hs-Source-Dirs: ., tools
+  Main-is: polh-test.hs
+  Build-Depends:      optparse-applicative
+
 Executable polh-collect
   Hs-Source-Dirs: ., tools
   Main-is: polh-collect.hs

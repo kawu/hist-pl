@@ -9,7 +9,7 @@ import Data.PoliMorf (RelCode(..))
 import Data.DAWG.Array (DAWGArray, size)
 import Text.Tokenize.Util.String (unHyphen)
 
-import Data.Polh.Collect (collect)
+import Data.Polh.Collect (HistDict, collect)
 
 data Args = Args
     { polhBinPath   :: FilePath
@@ -43,9 +43,6 @@ main = execParser opts >>= doCollect
               ++ "  to find approximate matchings and insert them to a\n"
               ++ "  POLH-BINARY lexicon." )
       & header "hello - a test for optparse-applicative" )
-
-type ID = T.Text
-type HistDict = DAWGArray (Maybe (Maybe (ID, RelCode)))
 
 decodeDict :: FilePath -> IO HistDict
 decodeDict = decodeFile
