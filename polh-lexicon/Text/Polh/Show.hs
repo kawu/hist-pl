@@ -10,6 +10,7 @@ import Data.List (intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
+import Text.XML.PolySoup (escapeXml)
 
 import Data.Polh.Types
 
@@ -29,10 +30,24 @@ identPref = L.fromLazyText (L.replicate (fromIntegral indentSize) " ")
 ident :: L.Builder -> L.Builder
 ident = (identPref <>)
 
--- | TODO: Print prolog and epilog.
+prolog :: [L.Builder]
+prolog =
+    [ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    , "<LexicalResource dtdVersion=\"16\">"
+    , "  <GlobalInformation>"
+    , "    <feat att=\"languageCoding\" val=\"ISO 639-6\"/>"
+    , "  </GlobalInformation>"
+    , "  <Lexicon>" ]
+
+epilog :: [L.Builder]
+epilog =
+    [ "  </Lexicon>"
+    , "</LexicalResource>" ]
+
 showPolh :: Polh -> L.Text
 showPolh =
-    L.toLazyText . mconcat . map (<> "\n") . concatMap buildLexEntry
+    L.toLazyText . mconcat . map (<> "\n") . embed . concatMap buildLexEntry
+    where embed body = prolog ++ map (ident.ident) body ++ epilog
 
 showLexEntry :: LexEntry -> L.Text
 showLexEntry =
@@ -136,7 +151,7 @@ buildRepr tag repr =
     beg = "<"  <> tag <> ">"
     end = "</" <> tag <> ">"
     body =
-        [ buildFeat "writtenForm" (writtenForm repr)
+        [ buildFeat "writtenForm" . escapeXml $ writtenForm repr
         , buildFeat "language" (language repr)
         , buildFeat "sourceID" (sourceID repr) ]
 
