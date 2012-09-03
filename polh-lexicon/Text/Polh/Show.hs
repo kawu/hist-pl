@@ -7,6 +7,7 @@ module Text.Polh.Show
 
 import Data.Monoid (Monoid, mempty, mappend, mconcat)
 import Data.List (intersperse)
+import Data.Maybe (maybeToList)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
@@ -65,7 +66,9 @@ buildLexEntry lex =
     beg = "<LexicalEntry id=\"" <> L.fromText (lexId lex) <> "\">"
     end = "</LexicalEntry>"
     body
-        =  map (buildFeat "partOfSpeech") (pos lex)
+        =  map (buildFeat "lineRef") (maybeToList $ lineRef lex)
+        ++ map (buildFeat "status") (maybeToList $ status lex)
+        ++ map (buildFeat "partOfSpeech") (pos lex)
         ++ buildLemma (lemma lex)
         ++ concatMap buildForm (forms lex)
         ++ concatMap buildRelForm (related lex)
@@ -125,7 +128,8 @@ buildSense sense =
         Nothing -> "<Sense>"
     end = "</Sense>"
     body
-        =  concatMap buildDef (defs sense)
+        =  map (buildFeat "style") (style sense)
+        ++ concatMap buildDef (defs sense)
         ++ concatMap buildCxt (cxts sense)
 
 buildDef :: Definition -> [L.Builder]

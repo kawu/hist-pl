@@ -89,6 +89,7 @@ instance Binary SynBehaviour where
 
 data Sense = Sense
     { senseId   :: Maybe T.Text
+    , style     :: [T.Text]
     , defs      :: [Definition]
     , cxts      :: [Context] }
     deriving (Show, Read, Eq, Ord)
@@ -96,12 +97,15 @@ data Sense = Sense
 instance Binary Sense where
     put Sense{..} = do
         put senseId
+        put style
         put defs
         put cxts
-    get = Sense <$> get <*> get <*> get
+    get = Sense <$> get <*> get <*> get <*> get
 
 data LexEntry = LexEntry
     { lexId         :: T.Text
+    , lineRef       :: Maybe T.Text
+    , status        :: Maybe T.Text
     , pos           :: [T.Text]
     , lemma         :: Lemma
     , forms         :: [WordForm]
@@ -114,6 +118,8 @@ data LexEntry = LexEntry
 instance Binary LexEntry where
     put LexEntry{..} = do
         put lexId
+        put lineRef
+        put status
         put pos
         put lemma
         put forms
@@ -121,7 +127,7 @@ instance Binary LexEntry where
         put syntactic
         put senses
         put related
-    get = LexEntry <$> get <*> get <*> get <*> get
-                   <*> get <*> get <*> get <*> get
+    get = LexEntry <$> get <*> get <*> get <*> get <*> get
+                   <*> get <*> get <*> get <*> get <*> get
 
 type Polh = [LexEntry]

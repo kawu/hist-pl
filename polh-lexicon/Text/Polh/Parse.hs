@@ -7,7 +7,7 @@ module Text.Polh.Parse
 
 import Control.Monad (join)
 import Control.Applicative ((<$>), (<*>), (*>), (<*))
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Text.XML.PolySoup as Soup
@@ -32,6 +32,8 @@ lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
     let with p = tagsParseXml (findAll p) tags
     in  LexEntry
         { lexId         = L.toStrict lexId
+        , lineRef       = listToMaybe $ with lineRefP
+        , status        = listToMaybe $ with statusP
         , pos           = with posP
         , lemma         = first "lemmaP" (with lemmaP)
         , forms         = with formP
@@ -47,6 +49,12 @@ first src xs  = error $ src ++ ": xs == " ++ show xs
 
 posP :: Parser T.Text
 posP = featP "partOfSpeech"
+
+lineRefP :: Parser T.Text
+lineRefP = featP "lineRef"
+
+statusP :: Parser T.Text
+statusP = featP "status"
 
 lemmaP :: Parser Lemma
 lemmaP = Lemma <$> (tag "Lemma" /> reprP)
@@ -88,8 +96,13 @@ synP = tag "SyntacticBehaviour" *> getAttr "senses" >^> \senses -> do
 
 data SenseContent
     = SenseDef Definition
+    | SenseStyle T.Text
     | SenseCxt Context
     | SenseOther ()
+
+senseStyle :: SenseContent -> Maybe T.Text
+senseStyle (SenseStyle style) = Just style
+senseStyle _                  = Nothing
 
 senseDef :: SenseContent -> Maybe Definition
 senseDef (SenseDef def) = Just def
@@ -103,12 +116,15 @@ senseP :: Parser Sense
 senseP = tag "Sense" *> maybeAttr "id" >^> \senseId -> do
     xs <- many $ oneOf
         [ SenseDef      <$> defP
+        , SenseStyle    <$> styleP
         , SenseCxt      <$> cxtP
         , SenseOther    <$> otherP ]
+    let style = mapMaybe senseStyle xs
     let defs = mapMaybe senseDef xs
     let cxts = mapMaybe senseCxt xs
     return $ Sense
         { senseId = L.toStrict <$> senseId
+        , style = style
         , defs = defs
         , cxts = cxts }
 
@@ -117,6 +133,9 @@ defP = Definition <$> (tag "Definition" /> reprP)
 
 cxtP :: Parser Context
 cxtP = Context <$> (tag "Context" /> reprP)
+
+styleP :: Parser T.Text
+styleP = featP "style"
 
 reprP :: Parser Repr
 reprP = tag "FormRepresentation" <|> tag "TextRepresentation" ^> reprBodyP
