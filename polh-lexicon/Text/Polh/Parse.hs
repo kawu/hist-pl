@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Text.Polh.Parse
-( parsePolh
+( readPolh
+, parsePolh
 , parseLexEntry
 ) where
 
@@ -10,6 +11,7 @@ import Control.Applicative ((<$>), (<*>), (*>), (<*))
 import Data.Maybe (mapMaybe, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy.IO as L
 import qualified Text.XML.PolySoup as Soup
 import Text.XML.PolySoup hiding (XmlParser, Parser, join)
 
@@ -154,6 +156,9 @@ anyFeatP = cut $ tag "feat" *> ( (,)
 featP :: L.Text -> Parser T.Text
 featP att = L.toStrict <$>
     cut (tag "feat" *> hasAttr "att" att *> getAttr "val")
+
+readPolh :: FilePath -> IO Polh
+readPolh = fmap parsePolh . L.readFile
 
 parsePolh :: L.Text -> Polh
 parsePolh = parseXml lmfP

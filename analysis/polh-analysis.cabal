@@ -1,0 +1,33 @@
+name:               polh-analyse
+version:            0.1.0
+synopsis:           Morphosyntactic analysis with Polh dictionary
+description:
+    Morphosyntactic analysis using the Polish historical dictionary.
+license:            BSD3
+license-file:       LICENSE
+cabal-version:      >= 1.6
+copyright:          Copyright (c) 2012 IPI PAN
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/synat
+build-type:         Simple
+
+library
+    build-depends:
+        base >= 4 && < 5
+      , containers
+      , text
+      , polh-lexicon
+      , adict >= 0.3 && < 0.5
+      , polimorf >= 0.3.1 && < 0.4
+
+    exposed-modules:
+        NLP.Polh.Analyse
+
+    ghc-options: -Wall
+
+source-repository head
+    type: git
+    location: git://github.com/kawu/synat.git
