@@ -1,8 +1,8 @@
 import System.Environment (getArgs)
 import qualified Data.Text.Lazy.IO as L
 
-import Text.Polh.Show (showPolh)
-import Data.Polh.IO (loadPolh)
+import NLP.Polh.LMF (showPolh)
+import NLP.Polh.Binary (loadPolh)
 
 main = do
     [binPath] <- getArgs

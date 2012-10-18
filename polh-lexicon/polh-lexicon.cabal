@@ -1,33 +1,40 @@
-Name:               polh-lexicon
-Version:            0.0.1
-Cabal-Version:      >= 1.2
-Synopsis:           Interface to a historical dictionary of polish 
-License:            BSD3
-License-file:       LICENSE
-Author:             Jakub Waszczuk
-Maintainer:         waszczuk.kuba@gmail.com
-Build-type:         Simple
+name:               polh-lexicon
+version:            0.1.0
+synopsis:           Interface to a historical dictionary of Polish 
+description:
+    Interface to a historical dictionary of Polish.
+license:            BSD3
+license-file:       LICENSE
+cabal-version:      >= 1.6
+copyright:          Copyright (c) 2012 IPI PAN
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/synat
+build-type:         Simple
 
-Library
-  Exposed-modules:    Data.Polh.Types
-                      Data.Polh.IO
-                      Data.Polh.Util
-                      Text.Polh.Parse
-                      Text.Polh.Show
-  Build-Depends:      base
+library
+  exposed-modules:    NLP.Polh.Types
+                      NLP.Polh.LMF
+                      NLP.Polh.LMF.Parse
+                      NLP.Polh.LMF.Show
+                      NLP.Polh.Binary
+                      NLP.Polh.Util
+  build-depends:      base
                     , directory
                     , filepath
                     , text
                     , binary
-                    , text-binary
-                    , polysoup >= 0.1
+                    , text-binary >= 0.1 && < 0.2
+                    , polysoup >= 0.1 && < 0.2
                     , data-lens
                     , lazy-io
 
-Executable polh-binarize
-  Hs-Source-Dirs: ., tools
-  Main-is: polh-binarize.hs
+executable polh-binarize
+  hs-source-dirs: ., tools
+  main-is: polh-binarize.hs
 
-Executable polh-show
-  Hs-Source-Dirs: ., tools
-  Main-is: polh-show.hs
+executable polh-show
+  hs-source-dirs: ., tools
+  main-is: polh-show.hs

@@ -1,4 +1,4 @@
-module Data.Polh.IO
+module NLP.Polh.Binary
 ( savePolh
 , loadPolh
 , loadIndex
@@ -17,7 +17,7 @@ import System.Directory ( getDirectoryContents, doesFileExist
 import Data.Binary (encodeFile, decodeFile, Binary)
 import qualified Data.Text as T
 
-import Data.Polh.Types
+import NLP.Polh.Types
 
 type Key = String
 
@@ -52,6 +52,7 @@ save path f xs = forM_ xs $ \x -> saveOne path (f x) x
 loadOne :: Binary a => FilePath -> Key -> IO a
 loadOne path elemId = decodeFile (path </> elemId)
 
+-- | Load the dictionary in a lazy (unsafe!) manner.
 load :: Binary a => FilePath -> IO [a]
 load path = do
     xs <- loadIndex path
@@ -75,8 +76,10 @@ updateLexEntry_ path lexKey f = do
     lexEntry <- loadLexEntry path lexKey
     saveLexEntry path (f lexEntry)
 
+-- | Save the polh dictionary.
 savePolh :: FilePath -> Polh -> IO ()
 savePolh path = save path lexKey
 
+-- | Load the dictionary in a lazy (unsafe!) manner.
 loadPolh :: FilePath -> IO Polh
 loadPolh = load

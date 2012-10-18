@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.Polh.Show
+module NLP.Polh.LMF.Show
 ( showPolh
 , showLexEntry
 ) where
@@ -13,7 +13,7 @@ import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
 import Text.XML.PolySoup (escapeXml)
 
-import Data.Polh.Types
+import NLP.Polh.Types
 
 -- | An infix synonym for 'mappend'.
 {-# INLINE (<>) #-}
@@ -156,8 +156,10 @@ buildRepr tag repr =
     end = "</" <> tag <> ">"
     body =
         [ buildFeat "writtenForm" . escapeXml $ writtenForm repr
-        , buildFeat "language" (language repr)
-        , buildFeat "sourceID" (sourceID repr) ]
+        , buildFeat "language" (language repr) ] ++ source
+    source = case sourceID repr of
+        Just x  -> [buildFeat "sourceID" x]
+        Nothing -> []
 
 buildFeat :: L.Builder -> T.Text -> L.Builder
 buildFeat att val =

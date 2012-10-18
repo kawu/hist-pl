@@ -1,4 +1,4 @@
-module Data.Polh.Util
+module NLP.Polh.Util
 ( allForms
 , hasForm
 , addForm
@@ -7,7 +7,7 @@ module Data.Polh.Util
 import qualified Data.Text as T
 import Data.Lens.Common
 
-import Data.Polh.Types
+import NLP.Polh.Types
 
 allForms :: LexEntry -> [T.Text]
 allForms lex

@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Polh.Types
+module NLP.Polh.Types
 ( Repr (..)
 , HasRepr (..)
 , text
@@ -27,7 +27,7 @@ import Data.Binary (Binary, put, get)
 data Repr = Repr
     { writtenForm :: T.Text
     , language    :: T.Text
-    , sourceID    :: T.Text }
+    , sourceID    :: Maybe T.Text }
     deriving (Show, Read, Eq, Ord)
 
 instance Binary Repr where

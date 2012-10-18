@@ -1,11 +1,7 @@
-import Control.Applicative ((<$>))
 import System.Environment (getArgs)
-import qualified Data.Text.Lazy.IO as L
-
-import Text.Polh.Parse (parsePolh)
-import Data.Polh.IO (savePolh)
+import NLP.Polh.LMF (readPolh)
+import NLP.Polh.Binary (savePolh)
 
 main = do
     [lmfPath, binPath] <- getArgs
-    polh <- parsePolh <$> L.readFile lmfPath
-    savePolh binPath polh
+    savePolh binPath =<< readPolh lmfPath

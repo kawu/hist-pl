@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.Polh.Parse
+module NLP.Polh.LMF.Parse
 ( readPolh
 , parsePolh
 , parseLexEntry
@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy.IO as L
 import qualified Text.XML.PolySoup as Soup
 import Text.XML.PolySoup hiding (XmlParser, Parser, join)
 
-import Data.Polh.Types
+import NLP.Polh.Types
 
 import Debug.Trace (trace)
 
@@ -146,7 +146,7 @@ reprBodyP :: Parser Repr
 reprBodyP = Repr
     <$> featP "writtenForm"
     <*> (featP "language" <|> grave' "language not specified" "polh")
-    <*> (featP "sourceID" <|> grave' "sourceID not specified" "srpsdp")
+    <*> (optional $ featP "sourceID")
 
 anyFeatP :: Parser (T.Text, T.Text)
 anyFeatP = cut $ tag "feat" *> ( (,)
