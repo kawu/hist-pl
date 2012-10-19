@@ -22,14 +22,17 @@ library
                       NLP.Polh.Binary
                       NLP.Polh.Util
   build-depends:      base
+                    , containers
                     , directory
                     , filepath
                     , text
                     , binary
                     , text-binary >= 0.1 && < 0.2
                     , polysoup >= 0.1 && < 0.2
-                    , data-lens
-                    , lazy-io
+                    , transformers
+                    , mtl
+
+  ghc-options: -Wall
 
 executable polh-binarize
   hs-source-dirs: ., tools

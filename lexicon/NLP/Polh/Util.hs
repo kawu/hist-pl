@@ -5,8 +5,6 @@ module NLP.Polh.Util
 ) where
 
 import qualified Data.Text as T
-import Data.Lens.Common
-
 import NLP.Polh.Types
 
 allForms :: LexEntry -> [T.Text]
@@ -17,8 +15,5 @@ allForms lex
 hasForm :: LexEntry -> T.Text -> Bool
 hasForm lex x = x `elem` allForms lex
 
-formsL :: Lens LexEntry [WordForm]
-formsL = lens forms (\xs lex -> lex {forms = xs})
-
 addForm :: WordForm -> LexEntry -> LexEntry
-addForm x = formsL ^%= (x:)    
+addForm x lex = lex { forms = (x : forms lex) }
