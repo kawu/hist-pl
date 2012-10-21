@@ -21,7 +21,7 @@ library
                       NLP.Polh.LMF.Show
                       NLP.Polh.Binary
                       NLP.Polh.Util
-  build-depends:      base
+  build-depends:      base >= 4 && < 5 
                     , containers
                     , directory
                     , filepath
