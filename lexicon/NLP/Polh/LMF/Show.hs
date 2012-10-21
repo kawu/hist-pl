@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Printing utilities for the LMF dictionary format.
+
 module NLP.Polh.LMF.Show
 ( showPolh
 , showLexEntry
 ) where
 
-import Data.Monoid (Monoid, mempty, mappend, mconcat)
+import Data.Monoid (Monoid, mappend, mconcat)
 import Data.List (intersperse)
 import Data.Maybe (maybeToList)
 import qualified Data.Text as T
@@ -45,11 +47,13 @@ epilog =
     [ "  </Lexicon>"
     , "</LexicalResource>" ]
 
+-- | Show the entire dictionary as a lazy text in the LMF format.
 showPolh :: Polh -> L.Text
 showPolh =
     L.toLazyText . mconcat . map (<> "\n") . embed . concatMap buildLexEntry
     where embed body = prolog ++ map (ident.ident) body ++ epilog
 
+-- | Show lexical entry using the LMF format.
 showLexEntry :: LexEntry -> L.Text
 showLexEntry =
     L.toLazyText . mconcat . map (<> "\n") . buildLexEntry
@@ -60,29 +64,29 @@ buildElem beg body end = beg : map ident body ++ [end]
 -- | Each output line is represented as a builder. We use separate builders
 -- for separate lines because we want to easilly indent the output text.
 buildLexEntry :: LexEntry -> [L.Builder]
-buildLexEntry lex =
+buildLexEntry lx =
     buildElem beg body end
   where
-    beg = "<LexicalEntry id=\"" <> L.fromText (lexId lex) <> "\">"
+    beg = "<LexicalEntry id=\"" <> L.fromText (lexId lx) <> "\">"
     end = "</LexicalEntry>"
     body
-        =  map (buildFeat "lineRef") (maybeToList $ lineRef lex)
-        ++ map (buildFeat "status") (maybeToList $ status lex)
-        ++ map (buildFeat "partOfSpeech") (pos lex)
-        ++ buildLemma (lemma lex)
-        ++ concatMap buildForm (forms lex)
-        ++ concatMap buildRelForm (related lex)
-        ++ buildComps (components lex)
-        ++ concatMap buildSyn (syntactic lex)
-        ++ concatMap buildSense (senses lex)
+        =  map (buildFeat "lineRef") (maybeToList $ lineRef lx)
+        ++ map (buildFeat "status") (maybeToList $ status lx)
+        ++ map (buildFeat "partOfSpeech") (pos lx)
+        ++ buildLemma (lemma lx)
+        ++ concatMap buildForm (forms lx)
+        ++ concatMap buildRelForm (related lx)
+        ++ buildComps (components lx)
+        ++ concatMap buildSyn (syntactic lx)
+        ++ concatMap buildSense (senses lx)
 
 buildLemma :: Lemma -> [L.Builder]
-buildLemma lemma =
+buildLemma base =
     buildElem beg body end
   where
     beg = "<Lemma>"
     end = "</Lemma>"
-    body = concatMap (buildRepr "FormRepresentation") (repr lemma)
+    body = concatMap (buildRepr "FormRepresentation") (repr base)
 
 buildForm :: WordForm -> [L.Builder]
 buildForm form =
@@ -124,7 +128,7 @@ buildSense sense =
     buildElem beg body end
   where
     beg = case senseId sense of
-        Just id -> "<Sense id=\"" <> L.fromText id <> "\">"
+        Just x  -> "<Sense id=\"" <> L.fromText x <> "\">"
         Nothing -> "<Sense>"
     end = "</Sense>"
     body
@@ -149,15 +153,15 @@ buildCxt cxt =
     body = concatMap (buildRepr "TextRepresentation") (repr cxt)
 
 buildRepr :: L.Builder -> Repr -> [L.Builder]
-buildRepr tag repr =
+buildRepr tag rp =
     buildElem beg body end
   where
     beg = "<"  <> tag <> ">"
     end = "</" <> tag <> ">"
     body =
-        [ buildFeat "writtenForm" . escapeXml $ writtenForm repr
-        , buildFeat "language" (language repr) ] ++ source
-    source = case sourceID repr of
+        [ buildFeat "writtenForm" . escapeXml $ writtenForm rp
+        , buildFeat "language" (language rp) ] ++ source
+    source = case sourceID rp of
         Just x  -> [buildFeat "sourceID" x]
         Nothing -> []
 

@@ -1,3 +1,5 @@
+-- | Some utility functions for working with the dictionary.
+
 module NLP.Polh.Util
 ( allForms
 , hasForm
@@ -7,13 +9,16 @@ module NLP.Polh.Util
 import qualified Data.Text as T
 import NLP.Polh.Types
 
+-- | All format (base form + other forms) of the lexeme.
 allForms :: LexEntry -> [T.Text]
-allForms lex
-    =  text (lemma lex) 
-    ++ concatMap text (forms lex)
+allForms lx
+    =  text (lemma lx) 
+    ++ concatMap text (forms lx)
 
+-- | Does lexeme take the given form? 
 hasForm :: LexEntry -> T.Text -> Bool
-hasForm lex x = x `elem` allForms lex
+hasForm lx x = x `elem` allForms lx
 
+-- | Add new word form to the lexeme description.
 addForm :: WordForm -> LexEntry -> LexEntry
-addForm x lex = lex { forms = (x : forms lex) }
+addForm x lx = lx { forms = (x : forms lx) }

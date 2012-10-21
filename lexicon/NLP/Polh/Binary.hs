@@ -13,8 +13,10 @@ module NLP.Polh.Binary
 , loadPolh
 
 , PolhM
+, runPolh
 , index
 , withKey
+, lookup
 ) where
 
 import Prelude hiding (lookup)
@@ -27,7 +29,7 @@ import System.IO.Unsafe (unsafePerformIO, unsafeInterleaveIO)
 import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, createDirectoryIfMissing
                         , createDirectory, doesDirectoryExist )
-import Data.Maybe (fromJust)
+import Data.Maybe (catMaybes)
 import Data.Monoid (mappend, mconcat)
 import Data.Binary (encodeFile, decodeFile)
 import qualified Data.Map as M
@@ -92,10 +94,14 @@ maybeErr io = do
         Left (_e :: SomeException)  -> return Nothing
         Right x                     -> return (Just x)
 
+maybeT :: Monad m => Maybe a -> MaybeT m a
+maybeT = MaybeT . return
+{-# INLINE maybeT #-}
+
 maybeErrT :: IO a -> MaybeT IO a
 maybeErrT io = do
     r <- lift (maybeErr io)
-    MaybeT (return r)
+    maybeT r
 
 -- | Load lexical entry from disk by its key.
 loadLexEntry :: FilePath -> Key -> IO (Maybe LexEntry)
@@ -116,10 +122,6 @@ newtype PolhM a = PolhM (ReaderT MemData IO a)
 entryPath :: MemData -> FilePath
 entryPath = (</> entryDir) . polhPath
 
--- | Path to file with map of forms.
-formMapPath :: MemData -> FilePath
-formMapPath = (</> formMapFile) . polhPath
-
 -- | List of dictionary keys.
 index :: PolhM [Key]
 index = PolhM $ do
@@ -132,9 +134,18 @@ withKey key = PolhM $ do
     path <- entryPath <$> ask
     lift . unsafeInterleaveIO $ loadLexEntry path key
 
+-- | Lookup the form in the dictionary.
+lookup :: T.Text -> PolhM [LexEntry]
+lookup x = do
+    fm <- PolhM $ formMap <$> ask
+    keys <- return $ case M.lookup x fm of
+        Nothing -> []
+        Just xs -> S.toList xs
+    catMaybes <$> mapM withKey keys
+
 -- | Execute the Polh monad against the binary Polh representation
 -- located in the given directory.  Return Nothing if the directory
--- doesnt' exist or if it doesn't look like a the Polh dictionary.
+-- doesnt' exist or if it doesn't look like a Polh dictionary.
 -- We assume that the binary representation doesn't change so we
 -- can provide the pure interface.
 runPolh :: FilePath -> PolhM a -> Maybe a
@@ -144,11 +155,13 @@ runPolh path (PolhM m) = unsafePerformIO . runMaybeT $ do
     guard doesExist 
     lift $ runReaderT m (MemData path formMap')
 
--- | Load the dictionary in a lazy (unsafe!) manner.
+-- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
+-- if the path doesn't correspond to a binary representation of the
+-- dictionary. 
 loadPolh :: FilePath -> Maybe Polh
 loadPolh path = runPolh path $ do
     keys <- index
-    mapM (fmap fromJust . withKey) keys
+    catMaybes <$> mapM withKey keys
 
 -- We don't provide update functionality since we want only the pure
 -- iterface to be visible.  It greatly simplifies the implementation.

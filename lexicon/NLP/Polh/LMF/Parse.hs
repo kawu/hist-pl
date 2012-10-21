@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | The module provides parsing utilities for the LMF dictionary.
+
 module NLP.Polh.LMF.Parse
 ( readPolh
 , parsePolh
@@ -7,7 +9,6 @@ module NLP.Polh.LMF.Parse
 ) where
 
 import Control.Monad (join)
-import Control.Applicative ((<$>), (<*>), (*>), (<*))
 import Data.Maybe (mapMaybe, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
@@ -21,19 +22,16 @@ import Debug.Trace (trace)
 
 type Parser a = Soup.XmlParser L.Text a
 
-type Attr = T.Text
-type AttrVal = T.Text
-
 lmfP :: Parser [LexEntry]
 lmfP = true //> lexEntryP
 
 lexEntryP :: Parser LexEntry
 lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
-  \lexId -> collTags >>=
-  \tags  -> return $
+  \lexId' -> collTags >>=
+  \tags   -> return $
     let with p = tagsParseXml (findAll p) tags
     in  LexEntry
-        { lexId         = L.toStrict lexId
+        { lexId         = L.toStrict lexId'
         , lineRef       = listToMaybe $ with lineRefP
         , status        = listToMaybe $ with statusP
         , pos           = with posP
@@ -45,7 +43,7 @@ lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
         , related       = with relP }
     
 first :: Show a => String -> [a] -> a
-first src [x] = x
+first _   [x] = x
 first src []  = error $ src ++ ": null xs"
 first src xs  = error $ src ++ ": xs == " ++ show xs
 
@@ -68,11 +66,11 @@ compoP :: Parser [T.Text]
 compoP = map L.toStrict <$> (tag "ListOfComponents" /> cut (getAttr "entry"))
 
 relP :: Parser RelForm
-relP = tag "RelatedForm" *> getAttr "targets" >^> \relTo -> do
+relP = tag "RelatedForm" *> getAttr "targets" >^> \relTo' -> do
     rs <- many reprP
     return $ RelForm
         { relRepr = rs
-        , relTo   = L.toStrict relTo }
+        , relTo   = L.toStrict relTo' }
 
 otherP :: Parser ()
 otherP = tagOpenName >^> \name ->
@@ -81,9 +79,6 @@ otherP = tagOpenName >^> \name ->
 warning :: String -> Parser a -> Parser a
 warning msg x = trace ("WARNING: " ++ msg) x
 
-warning' :: String -> a -> Parser a
-warning' msg x = warning msg (return x)
-
 grave :: String -> Parser a -> Parser a
 grave msg x = trace ("ERROR: " ++ msg) x
 
@@ -91,10 +86,10 @@ grave' :: String -> a -> Parser a
 grave' msg x = grave msg (return x)
 
 synP :: Parser SynBehaviour
-synP = tag "SyntacticBehaviour" *> getAttr "senses" >^> \senses -> do
-    repr <- reprBodyP
-    let senseIds = T.words (L.toStrict senses)
-    return (SynBehaviour [repr] senseIds)
+synP = tag "SyntacticBehaviour" *> getAttr "senses" >^> \senses' -> do
+    repr' <- reprBodyP
+    let senseIds = T.words (L.toStrict senses')
+    return (SynBehaviour [repr'] senseIds)
 
 data SenseContent
     = SenseDef Definition
@@ -103,8 +98,8 @@ data SenseContent
     | SenseOther ()
 
 senseStyle :: SenseContent -> Maybe T.Text
-senseStyle (SenseStyle style) = Just style
-senseStyle _                  = Nothing
+senseStyle (SenseStyle x) = Just x
+senseStyle _              = Nothing
 
 senseDef :: SenseContent -> Maybe Definition
 senseDef (SenseDef def) = Just def
@@ -115,20 +110,20 @@ senseCxt (SenseCxt cxt) = Just cxt
 senseCxt _              = Nothing
 
 senseP :: Parser Sense
-senseP = tag "Sense" *> maybeAttr "id" >^> \senseId -> do
+senseP = tag "Sense" *> maybeAttr "id" >^> \senseId' -> do
     xs <- many $ oneOf
         [ SenseDef      <$> defP
         , SenseStyle    <$> styleP
         , SenseCxt      <$> cxtP
         , SenseOther    <$> otherP ]
-    let style = mapMaybe senseStyle xs
-    let defs = mapMaybe senseDef xs
-    let cxts = mapMaybe senseCxt xs
+    let styl' = mapMaybe senseStyle xs
+    let defs' = mapMaybe senseDef xs
+    let cxts' = mapMaybe senseCxt xs
     return $ Sense
-        { senseId = L.toStrict <$> senseId
-        , style = style
-        , defs = defs
-        , cxts = cxts }
+        { senseId = L.toStrict <$> senseId'
+        , style = styl'
+        , defs  = defs'
+        , cxts  = cxts' }
 
 defP :: Parser Definition
 defP = Definition <$> (tag "Definition" /> reprP)
@@ -148,20 +143,18 @@ reprBodyP = Repr
     <*> (featP "language" <|> grave' "language not specified" "polh")
     <*> (optional $ featP "sourceID")
 
-anyFeatP :: Parser (T.Text, T.Text)
-anyFeatP = cut $ tag "feat" *> ( (,)
-    <$> (L.toStrict <$> getAttr "att")
-    <*> (L.toStrict <$> getAttr "val") )
-
 featP :: L.Text -> Parser T.Text
 featP att = L.toStrict <$>
     cut (tag "feat" *> hasAttr "att" att *> getAttr "val")
 
+-- | Read the dictionary from the LMF file.
 readPolh :: FilePath -> IO Polh
 readPolh = fmap parsePolh . L.readFile
 
+-- | Parse the entire dictionary in the LMF format.
 parsePolh :: L.Text -> Polh
 parsePolh = parseXml lmfP
 
+-- | Parse the lexical entry LMF representation
 parseLexEntry :: L.Text -> LexEntry
 parseLexEntry = parseXml lexEntryP
