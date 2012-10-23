@@ -19,7 +19,7 @@ library
         base >= 4 && < 5
       , containers
       , text
-      , polh-lexicon
+      , polh-lexicon >= 0.1 && < 0.2
       , adict >= 0.3 && < 0.5
       , polimorf >= 0.3.1 && < 0.4
 

@@ -1,5 +1,8 @@
 module NLP.Polh.Analyse
-( buildTrie
+( Token (..)
+, Ana (..)
+, Other
+, buildTrie
 , tokenize
 , anaSent
 , anaWord
@@ -14,9 +17,9 @@ import qualified Data.Text as T
 import qualified Data.PoliMorf as Poli
 import qualified NLP.Adict.Trie as Trie
 
-import qualified Data.Polh.Types as H
-import qualified Text.Polh.Parse as H
-import qualified Data.Polh.Util as H
+import qualified NLP.Polh.Types as H
+import qualified NLP.Polh.LMF as H
+import qualified NLP.Polh.Util as H
 
 -- | Is it a historical word?
 type LexId = T.Text
@@ -62,7 +65,7 @@ anaSent trie = mapL (anaWord trie) . tokenize
 
 anaWord :: Trie -> T.Text -> Token
 anaWord trie x = Token x $ case Trie.lookup (T.unpack x) trie of
-    Just (Just x)   -> Hist x
+    Just (Just i)   -> Hist i
     Just Nothing    -> Cont
     Nothing         -> Unk
 
@@ -88,6 +91,6 @@ buildTrie lmfPath poliPath = do
     return $ fmap rmCode trie
   where
     mkPolh xs =
-        [ (x, H.lexId lex)
-        | lex <- xs, x <- H.allForms lex ]
+        [ (x, H.lexId lx)
+        | lx <- xs, x <- H.allForms lx ]
     rmCode = fmap (fmap fst)
