@@ -1,7 +1,9 @@
 module NLP.Polh.Analyse
-( Token (..)
+( Trie
+, LexId
+, Token (..)
 , Ana (..)
-, Other
+, Other (..)
 , buildTrie
 , tokenize
 , anaSent
@@ -11,6 +13,7 @@ module NLP.Polh.Analyse
 
 import Control.Applicative ((<$>))
 import Control.Arrow (first)
+import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Char as C
 import qualified Data.Text as T
@@ -18,13 +21,13 @@ import qualified Data.PoliMorf as Poli
 import qualified NLP.Adict.Trie as Trie
 
 import qualified NLP.Polh.Types as H
-import qualified NLP.Polh.LMF as H
+import qualified NLP.Polh.Binary as H
 import qualified NLP.Polh.Util as H
 
--- | Is it a historical word?
+-- | Lexeme identifier.
 type LexId = T.Text
 
-type Trie = Trie.TrieM Char (Maybe LexId)
+type Trie = Trie.TrieM Char (S.Set LexId)
 
 data Token = Token
     { orth  :: T.Text
@@ -34,7 +37,7 @@ data Token = Token
 -- | Analysis result.
 data Ana
     -- | Historical word.
-    = Hist LexId  -- [H.LexEntry]
+    = Hist [LexId]  -- [H.LexEntry]
     -- | Contemporary word.
     | Cont  -- [M.Interp]
     -- | Unknown word.
@@ -46,6 +49,7 @@ data Other
     = Pun T.Text
     -- | Space
     | Space T.Text
+    deriving (Show)
 
 tokenize :: T.Text -> [Either T.Text Other]
 tokenize =
@@ -64,10 +68,11 @@ anaSent :: Trie -> T.Text -> [Either Token Other]
 anaSent trie = mapL (anaWord trie) . tokenize
 
 anaWord :: Trie -> T.Text -> Token
-anaWord trie x = Token x $ case Trie.lookup (T.unpack x) trie of
-    Just (Just i)   -> Hist i
-    Just Nothing    -> Cont
-    Nothing         -> Unk
+anaWord trie x = Token x $ case Trie.lookup (mkKey x) trie of
+    Just xs -> if S.null xs
+        then Cont
+        else Hist (S.toList xs)
+    Nothing -> Unk
 
 -- | Map the function over left elements.
 mapL :: (a -> a') -> [Either a b] -> [Either a' b]
@@ -79,18 +84,26 @@ mapL f =
 -- | Parse the LMF historical dictionary, merge it with the PoliMorf
 -- and return the resulting trie.
 buildTrie
-    :: FilePath     -- ^ Path to LMF
+    :: FilePath     -- ^ Path to Polh binary dictionary
     -> FilePath     -- ^ Path to PoliMorf
     -> IO Trie      -- ^ Resulting trie
-buildTrie lmfPath poliPath = do
-    -- TODO: Filter one-word forms.
-    polh <- mkPolh <$> H.readPolh lmfPath
+buildTrie polhPath poliPath = do
+    -- TODO: Filter one-word forms?
     baseMap <- Poli.mkBaseMap <$> Poli.readPoliMorf poliPath
-    let polh' = Poli.merge baseMap $ M.fromList polh
-        trie = Trie.fromList $ map (first T.unpack) (M.assocs polh')
-    return $ fmap rmCode trie
+    let polh = case H.loadPolh polhPath of
+            Nothing -> error "buildTrie: not a polh dictionary"
+            Just xs -> mkPolh xs
+        polh' = Poli.merge baseMap $ M.fromList polh
+        trie = Trie.fromList $ map (first mkKey) (M.assocs polh')
+    return $ fmap (fmap rmCode) trie
   where
     mkPolh xs =
-        [ (x, H.lexId lx)
+        [ (x, S.singleton (H.lexId lx))
         | lx <- xs, x <- H.allForms lx ]
-    rmCode = fmap (fmap fst)
+    rmCode (Just (xs, _)) = xs
+    rmCode Nothing        = S.empty
+
+
+-- | Make caseless trie key from the text.
+mkKey :: T.Text -> String
+mkKey = T.unpack . T.toLower

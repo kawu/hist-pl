@@ -31,3 +31,11 @@ library
 source-repository head
     type: git
     location: git://github.com/kawu/synat.git
+
+executable polh-analyse
+    build-depends:
+        binary
+      , cmdargs
+    hs-source-dirs: ., tools
+    main-is: polh-analyse.hs
+    ghc-options: -Wall -O2
