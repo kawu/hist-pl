@@ -89,7 +89,8 @@ buildTrie
     -> IO Trie      -- ^ Resulting trie
 buildTrie polhPath poliPath = do
     -- TODO: Filter one-word forms?
-    baseMap <- Poli.mkBaseMap <$> Poli.readPoliMorf poliPath
+    baseMap <- Poli.mkBaseMap . filter oneWordEntry
+           <$> Poli.readPoliMorf poliPath
     let polh = case H.loadPolh polhPath of
             Nothing -> error "buildTrie: not a polh dictionary"
             Just xs -> mkPolh xs
@@ -97,12 +98,19 @@ buildTrie polhPath poliPath = do
         trie = Trie.fromList $ map (first mkKey) (M.assocs polh')
     return $ fmap (fmap rmCode) trie
   where
-    mkPolh xs =
+    mkPolh dict =
         [ (x, S.singleton (H.lexId lx))
-        | lx <- xs, x <- H.allForms lx ]
+        | lx <- dict, x <- H.allForms lx, oneWord x ]
     rmCode (Just (xs, _)) = xs
     rmCode Nothing        = S.empty
 
+-- | Is it a one-word entry?
+oneWordEntry :: Entry -> Bool
+oneWordEntry = oneWord . Poli.form
+
+-- | Is it a one-word text?
+oneWord :: T.Text -> Bool
+oneWord = (==1) . length . T.words
 
 -- | Make caseless trie key from the text.
 mkKey :: T.Text -> String

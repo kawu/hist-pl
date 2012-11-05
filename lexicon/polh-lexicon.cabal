@@ -1,5 +1,5 @@
 name:               polh-lexicon
-version:            0.1.0
+version:            0.1.0.1
 synopsis:           Interface to a historical dictionary of Polish 
 description:
     Interface to a historical dictionary of Polish.
@@ -11,7 +11,7 @@ author:             Jakub Waszczuk
 maintainer:         waszczuk.kuba@gmail.com
 stability:          experimental
 category:           Natural Language Processing
-homepage:           https://github.com/kawu/synat
+homepage:           https://github.com/kawu/polh
 build-type:         Simple
 
 library
@@ -33,6 +33,10 @@ library
                     , mtl
 
   ghc-options: -Wall
+
+source-repository head
+    type: git
+    location: git://github.com/kawu/polh.git
 
 executable polh-binarize
   hs-source-dirs: ., tools
