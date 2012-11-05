@@ -105,7 +105,7 @@ buildTrie polhPath poliPath = do
     rmCode Nothing        = S.empty
 
 -- | Is it a one-word entry?
-oneWordEntry :: Entry -> Bool
+oneWordEntry :: Poli.Entry -> Bool
 oneWordEntry = oneWord . Poli.form
 
 -- | Is it a one-word text?
