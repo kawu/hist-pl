@@ -22,7 +22,7 @@ module NLP.Polh.Binary
 import Prelude hiding (lookup)
 import Control.Exception (try, SomeException)
 import Control.Monad (when, guard)
-import Control.Applicative ((<$>))
+import Control.Applicative (Applicative, (<$>))
 import Control.Monad.Reader (ReaderT (..), ask, lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import System.IO.Unsafe (unsafePerformIO, unsafeInterleaveIO)
@@ -116,7 +116,7 @@ data MemData = MemData
 -- | A PolhM monad is a wrapper over the Polish historical
 -- dictionary in a binary form.
 newtype PolhM a = PolhM (ReaderT MemData IO a)
-    deriving (Functor, Monad)
+    deriving (Functor, Applicative, Monad)
 
 -- | Path to directory with entries.
 entryPath :: MemData -> FilePath
