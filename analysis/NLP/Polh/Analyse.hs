@@ -11,8 +11,9 @@ module NLP.Polh.Analyse
 , mapL
 ) where
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow (first)
+import Data.Maybe (fromJust)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Char as C
@@ -24,11 +25,12 @@ import qualified NLP.Polh.Types as H
 import qualified NLP.Polh.Binary as H
 import qualified NLP.Polh.Util as H
 
+import qualified NLP.Morfeusz as F
+
 -- | Lexeme identifier.
 type LexId = T.Text
 
--- | Analysis results.  The empty map means that the word comes from
--- the contemporary dictionary.
+-- | Provisional analysis results.
 type Ana = M.Map LexId Poli.RelCode
 
 type Trie = Trie.TrieM Char Ana
@@ -36,8 +38,10 @@ type Trie = Trie.TrieM Char Ana
 data Token = Token {
     -- | Orthographic form.
       orth  :: T.Text
-    -- | Analysis results.
-    , ana   :: Ana }
+    -- | Historical interpretations.
+    , hist  :: [(H.LexEntry, Poli.RelCode)]
+    -- | Conteporary interpretations.
+    , cont  :: [[F.Interp]] }
     deriving (Show)
 
 data Other
@@ -62,21 +66,40 @@ tokenize =
         | otherwise                 = Left x
 
 -- | Analyse the text.
-anaText :: Trie -> T.Text -> [Either Token Other]
+anaText :: Trie -> T.Text -> H.PolhM [Either Token Other]
 anaText trie = mapL (anaWord trie) . tokenize
 
--- | Analyse the word.
-anaWord :: Trie -> T.Text -> Token
-anaWord trie x = Token x $ case Trie.lookup (mkKey x) trie of
-    Nothing -> M.empty
-    Just xs -> xs
-
 -- | Map the function over left elements.
-mapL :: (a -> a') -> [Either a b] -> [Either a' b]
+mapL :: (Functor m, Monad m) => (a -> m a') -> [Either a b] -> m [Either a' b]
 mapL f =
-    let g (Left x)  = Left (f x)
-        g (Right y) = Right y
-    in  map g
+    let g (Left x)  = Left <$> f x
+        g (Right y) = return (Right y)
+    in  mapM g
+
+-- | Analyse the word.
+anaWord :: Trie -> T.Text -> H.PolhM Token
+anaWord trie x = do
+    _hist <- anaHist trie x
+    _cont <- return (anaCont x)
+    return $ Token x _hist _cont
+
+-- | Analyse the word with respect to the historical dictionary. 
+-- FIXME: There is no guarantee that lexId is equall to key in
+-- binary dictionary.
+anaHist :: Trie -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
+anaHist trie x = sequence
+    [ (,) <$> follow lexId <*> pure relCode
+    | (lexId, relCode) <- ana ]
+  where
+    ana = case Trie.lookup (mkKey x) trie of
+        Nothing -> []
+        Just xs -> M.toList xs
+    follow = fmap fromJust . H.withKey
+
+-- | Analyse the word using the Morfeusz analyser for contemporary
+-- Polish.
+anaCont :: T.Text -> [[F.Interp]]
+anaCont = map F.interps . head . F.paths . F.analyse False
 
 -- | Parse the LMF historical dictionary, merge it with the PoliMorf
 -- and return the resulting trie.

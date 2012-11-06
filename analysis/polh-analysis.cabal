@@ -19,9 +19,11 @@ library
         base >= 4 && < 5
       , containers
       , text
-      , polh-lexicon >= 0.1 && < 0.2
+      , polh-lexicon >= 0.2 && < 0.3
       , adict >= 0.3 && < 0.5
       , polimorf >= 0.4 && < 0.5
+      , morfeusz >= 0.4.2 && < 0.5
+      , transformers
 
     exposed-modules:
         NLP.Polh.Analyse

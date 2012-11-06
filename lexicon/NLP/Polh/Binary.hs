@@ -12,6 +12,8 @@ module NLP.Polh.Binary
 ( savePolh
 , loadPolh
 
+, PolhT
+, runPolhT
 , PolhM
 , runPolh
 , index
@@ -22,6 +24,8 @@ module NLP.Polh.Binary
 import Prelude hiding (lookup)
 import Control.Exception (try, SomeException)
 import Control.Monad (when, guard)
+import Control.Monad.Trans.Class (MonadTrans)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Applicative (Applicative, (<$>))
 import Control.Monad.Reader (ReaderT (..), ask, lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
@@ -87,9 +91,9 @@ savePolh path xs = do
       where
         key = lexId lexEntry
 
-maybeErr :: IO a -> IO (Maybe a)
+maybeErr :: MonadIO m => IO a -> m (Maybe a)
 maybeErr io = do
-    r <- try io
+    r <- liftIO (try io)
     case r of
         Left (_e :: SomeException)  -> return Nothing
         Right x                     -> return (Just x)
@@ -98,9 +102,9 @@ maybeT :: Monad m => Maybe a -> MaybeT m a
 maybeT = MaybeT . return
 {-# INLINE maybeT #-}
 
-maybeErrT :: IO a -> MaybeT IO a
+maybeErrT :: MonadIO m => IO a -> MaybeT m a
 maybeErrT io = do
-    r <- lift (maybeErr io)
+    r <- liftIO (maybeErr io)
     maybeT r
 
 -- | Load lexical entry from disk by its key.
@@ -113,31 +117,33 @@ data MemData = MemData
     { polhPath  :: FilePath
     , formMap   :: M.Map T.Text (S.Set Key) }
 
--- | A PolhM monad is a wrapper over the Polish historical
--- dictionary in a binary form.
-newtype PolhM a = PolhM (ReaderT MemData IO a)
-    deriving (Functor, Applicative, Monad)
+-- | A Polh monad transformer.
+newtype PolhT m a = PolhT (ReaderT MemData m a)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
+
+-- | A Polh monad is a Polh monad transformer over the hidden IO monad.
+type PolhM a = PolhT IO a
 
 -- | Path to directory with entries.
 entryPath :: MemData -> FilePath
 entryPath = (</> entryDir) . polhPath
 
 -- | List of dictionary keys.
-index :: PolhM [Key]
-index = PolhM $ do
+index :: (Applicative m, MonadIO m) => PolhT m [Key]
+index = PolhT $ do
     path <- entryPath <$> ask
-    map T.pack <$> lift (loadContents path)
+    map T.pack <$> liftIO (loadContents path)
 
 -- | Extract lexical entry with the given ID.
-withKey :: Key -> PolhM (Maybe LexEntry)
-withKey key = PolhM $ do
+withKey :: (Applicative m, MonadIO m) => Key -> PolhT m (Maybe LexEntry)
+withKey key = PolhT $ do
     path <- entryPath <$> ask
-    lift . unsafeInterleaveIO $ loadLexEntry path key
+    liftIO . unsafeInterleaveIO $ loadLexEntry path key
 
 -- | Lookup the form in the dictionary.
-lookup :: T.Text -> PolhM [LexEntry]
+lookup :: (Applicative m, MonadIO m) => T.Text -> PolhT m [LexEntry]
 lookup x = do
-    fm <- PolhM $ formMap <$> ask
+    fm <- PolhT $ formMap <$> ask
     keys <- return $ case M.lookup x fm of
         Nothing -> []
         Just xs -> S.toList xs
@@ -149,11 +155,18 @@ lookup x = do
 -- We assume that the binary representation doesn't change so we
 -- can provide the pure interface.
 runPolh :: FilePath -> PolhM a -> Maybe a
-runPolh path (PolhM m) = unsafePerformIO . runMaybeT $ do
+runPolh path polh = unsafePerformIO (runPolhT path polh)
+
+-- | Execute the Polh monad transformer against the binary Polh representation
+-- located in the given directory.  Return Nothing if the directory doesnt'
+-- exist or if it doesn't look like a Polh dictionary.  We assume that the
+-- binary representation doesn't change so we can provide the pure interface.
+runPolhT :: MonadIO m => FilePath -> PolhT m a -> m (Maybe a)
+runPolhT path (PolhT r) = runMaybeT $ do
     formMap' <- maybeErrT $ decodeFile (path </> formMapFile)
-    doesExist <- lift $ doesDirectoryExist (path </> entryDir)
+    doesExist <- liftIO $ doesDirectoryExist (path </> entryDir)
     guard doesExist 
-    lift $ runReaderT m (MemData path formMap')
+    lift $ runReaderT r (MemData path formMap')
 
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
