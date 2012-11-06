@@ -1,12 +1,12 @@
 module NLP.Polh.Analyse
-( Trie
-, LexId
+( LexId
+, Ana
+, Trie
 , Token (..)
-, Ana (..)
 , Other (..)
 , buildTrie
 , tokenize
-, anaSent
+, anaText
 , anaWord
 , mapL
 ) where
@@ -27,21 +27,17 @@ import qualified NLP.Polh.Util as H
 -- | Lexeme identifier.
 type LexId = T.Text
 
-type Trie = Trie.TrieM Char (S.Set LexId)
+-- | Analysis results.  The empty map means that the word comes from
+-- the contemporary dictionary.
+type Ana = M.Map LexId Poli.RelCode
 
-data Token = Token
-    { orth  :: T.Text
+type Trie = Trie.TrieM Char Ana
+
+data Token = Token {
+    -- | Orthographic form.
+      orth  :: T.Text
+    -- | Analysis results.
     , ana   :: Ana }
-    deriving (Show)
-
--- | Analysis result.
-data Ana
-    -- | Historical word.
-    = Hist [LexId]  -- [H.LexEntry]
-    -- | Contemporary word.
-    | Cont  -- [M.Interp]
-    -- | Unknown word.
-    | Unk
     deriving (Show)
 
 data Other
@@ -51,6 +47,7 @@ data Other
     | Space T.Text
     deriving (Show)
 
+-- | Perform the simple tokenization.
 tokenize :: T.Text -> [Either T.Text Other]
 tokenize =
     map mkElem . T.groupBy cmp
@@ -64,15 +61,15 @@ tokenize =
         | T.any C.isPunctuation x   = Right (Pun x)
         | otherwise                 = Left x
 
-anaSent :: Trie -> T.Text -> [Either Token Other]
-anaSent trie = mapL (anaWord trie) . tokenize
+-- | Analyse the text.
+anaText :: Trie -> T.Text -> [Either Token Other]
+anaText trie = mapL (anaWord trie) . tokenize
 
+-- | Analyse the word.
 anaWord :: Trie -> T.Text -> Token
 anaWord trie x = Token x $ case Trie.lookup (mkKey x) trie of
-    Just xs -> if S.null xs
-        then Cont
-        else Hist (S.toList xs)
-    Nothing -> Unk
+    Nothing -> M.empty
+    Just xs -> xs
 
 -- | Map the function over left elements.
 mapL :: (a -> a') -> [Either a b] -> [Either a' b]
@@ -95,14 +92,11 @@ buildTrie polhPath poliPath = do
             Nothing -> error "buildTrie: not a polh dictionary"
             Just xs -> mkPolh xs
         polh' = Poli.merge baseMap $ M.fromList polh
-        trie = Trie.fromList $ map (first mkKey) (M.assocs polh')
-    return $ fmap (fmap rmCode) trie
+    return $ Trie.fromList $ map (first mkKey) (M.assocs polh')
   where
     mkPolh dict =
         [ (x, S.singleton (H.lexId lx))
         | lx <- dict, x <- H.allForms lx, oneWord x ]
-    rmCode (Just (xs, _)) = xs
-    rmCode Nothing        = S.empty
 
 -- | Is it a one-word entry?
 oneWordEntry :: Poli.Entry -> Bool

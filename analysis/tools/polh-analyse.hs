@@ -8,7 +8,7 @@ import Data.Binary (encodeFile, decodeFile)
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
-import NLP.Polh.Analyse (Trie, buildTrie, anaSent)
+import NLP.Polh.Analyse (Trie, buildTrie, anaText)
 import qualified NLP.Adict.DAWG as D
 
 data Args
@@ -51,5 +51,5 @@ exec AnaMode{..} = do
 
 onLine :: Trie -> L.Text -> L.Text
 onLine trie line =
-    let toks = anaSent trie (L.toStrict line)
+    let toks = anaText trie (L.toStrict line)
     in  L.intercalate "\n" $ map (L.pack . show) toks
