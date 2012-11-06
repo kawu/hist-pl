@@ -36,7 +36,7 @@ library
 
 source-repository head
     type: git
-    location: git://github.com/kawu/polh.git
+    location: https://github.com/kawu/polh.git
 
 executable polh-binarize
   hs-source-dirs: ., tools

@@ -30,7 +30,7 @@ library
 
 source-repository head
     type: git
-    location: git://github.com/kawu/polh.git
+    location: https://github.com/kawu/polh.git
 
 executable polh-analyse
     build-depends:

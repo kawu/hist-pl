@@ -41,3 +41,7 @@ Executable polh-collect-contexts
   Hs-Source-Dirs: ., tools
   Main-is: polh-collect-contexts.hs
   Build-Depends:      optparse-applicative
+
+source-repository head
+    type: git
+    location: https://github.com/kawu/polh.git
