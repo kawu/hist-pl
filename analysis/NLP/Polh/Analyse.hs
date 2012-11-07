@@ -1,6 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module NLP.Polh.Analyse
-( LexId
-, Ana
+( Ana
 , Trie
 , Token (..)
 , Other (..)
@@ -9,15 +10,20 @@ module NLP.Polh.Analyse
 , anaText
 , anaWord
 , mapL
+, showText
 ) where
 
 import Control.Applicative ((<$>), (<*>), pure)
 import Control.Arrow (first)
 import Data.Maybe (fromJust)
+import Data.Monoid (Monoid, mappend, mconcat)
+import Data.List (intersperse)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Char as C
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy.Builder as L
 import qualified Data.PoliMorf as Poli
 import qualified NLP.Adict.Trie as Trie
 
@@ -27,11 +33,8 @@ import qualified NLP.Polh.Util as H
 
 import qualified NLP.Morfeusz as F
 
--- | Lexeme identifier.
-type LexId = T.Text
-
 -- | Provisional analysis results.
-type Ana = M.Map LexId Poli.RelCode
+type Ana = M.Map H.Key Poli.RelCode
 
 type Trie = Trie.TrieM Char Ana
 
@@ -84,14 +87,12 @@ anaWord trie x = do
     return $ Token x _hist _cont
 
 -- | Analyse the word with respect to the historical dictionary. 
--- FIXME: There is no guarantee that lexId is equall to key in
--- binary dictionary.
 anaHist :: Trie -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
 anaHist trie x = sequence
-    [ (,) <$> follow lexId <*> pure relCode
-    | (lexId, relCode) <- ana ]
+    [ (,) <$> follow key <*> pure relCode
+    | (key, relCode) <- ana ]
   where
-    ana = case Trie.lookup (mkKey x) trie of
+    ana = case Trie.lookup (mkQ x) trie of
         Nothing -> []
         Just xs -> M.toList xs
     follow = fmap fromJust . H.withKey
@@ -115,11 +116,11 @@ buildTrie polhPath poliPath = do
         Nothing -> error "buildTrie: not a polh dictionary"
         Just xs -> return $ mkPolh xs
     let polh' = Poli.merge baseMap $ M.fromList polh
-    return $ Trie.fromList $ map (first mkKey) (M.assocs polh')
+    return $ Trie.fromList $ map (first mkQ) (M.assocs polh')
   where
     mkPolh dict =
-        [ (x, S.singleton (H.lexId lx))
-        | lx <- dict, x <- H.allForms lx, oneWord x ]
+        [ (x, S.singleton (H.lexKey entry))
+        | entry <- dict, x <- H.allForms entry, oneWord x ]
 
 -- | Is it a one-word entry?
 oneWordEntry :: Poli.Entry -> Bool
@@ -129,6 +130,55 @@ oneWordEntry = oneWord . Poli.form
 oneWord :: T.Text -> Bool
 oneWord = (==1) . length . T.words
 
--- | Make caseless trie key from the text.
-mkKey :: T.Text -> String
-mkKey = T.unpack . T.toLower
+-- | Make caseless trie search string from the text.
+mkQ :: T.Text -> String
+mkQ = T.unpack . T.toLower
+
+showText :: [Either Token Other] -> L.Text
+showText = L.toLazyText . mconcat . newlineSep . buildText
+
+buildText :: [Either Token Other] -> [L.Builder]
+buildText xs = "sent:" :
+    map indent (concatMap (either buildTok buildOther) xs)
+
+-- | List of Text builders for the token.  Individual lines are represented
+-- by different builders.
+buildTok :: Token -> [L.Builder]
+buildTok tok
+    =  buildHead tok
+    :  map (indent . buildHist) (hist tok)
+    -- ++ concatMap buildCont (cont tok)
+
+buildHead :: Token -> L.Builder
+buildHead tok = "word: " <> L.fromText (orth tok)
+
+-- | Build a list of historical interpretations.
+buildHist :: (H.LexEntry, Poli.RelCode) -> L.Builder
+buildHist (entry, _code)
+    =  "hist: "
+    <> buildPos <> " "
+    <> commaRepr (H.lemma entry)
+--     <> " " <> "tags: "
+  where
+    buildPos = case H.pos entry of
+        [] -> "-"
+        xs -> mconcat . commaSep . map L.fromText $ xs
+
+buildOther :: Other -> [L.Builder]
+buildOther (Space _) = ["<space>"]
+buildOther (Pun t)   = ["pun: " <> L.fromText t]
+
+commaRepr :: H.HasRepr t => t -> L.Builder
+commaRepr = mconcat . commaSep . map L.fromText . H.text
+
+(<>) :: Monoid m => m -> m -> m
+(<>) = mappend
+
+indent :: L.Builder -> L.Builder
+indent = ("  " <>)
+
+commaSep :: [L.Builder] -> [L.Builder]
+commaSep = intersperse ", "
+
+newlineSep :: [L.Builder] -> [L.Builder]
+newlineSep = intersperse "\n"
