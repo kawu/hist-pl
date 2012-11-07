@@ -6,6 +6,7 @@
 
 module NLP.Polh.Binary
 ( Key
+, lexKey
 
 , savePolh
 , loadPolh
