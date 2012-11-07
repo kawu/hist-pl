@@ -21,7 +21,7 @@ module NLP.Polh.Binary
 
 import Prelude hiding (lookup)
 import Control.Exception (try, SomeException)
-import Control.Monad (when, guard)
+import Control.Monad (when, guard, forM)
 import Control.Monad.Trans.Class (MonadTrans)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Applicative (Applicative, (<$>))
@@ -49,8 +49,12 @@ entryDir = "entries"
 formMapFile :: String
 formMapFile = "forms.bin"
 
--- | A dictionary key (lexical entry ID).
+-- | A dictionary key.
 type Key = T.Text
+
+-- | Key assigned to the lexical entry.
+lexKey :: LexEntry -> Key
+lexKey = lexId
 
 -- | Load the directory contents.
 loadContents :: FilePath -> IO [FilePath]
@@ -84,10 +88,8 @@ savePolh path xs = do
         saveLexEntry lexPath x
         return $ lexMap x
     lexMap lexEntry = M.fromListWith mappend
-        [ (x, S.singleton key)
+        [ (x, S.singleton (lexKey lexEntry))
         | x <- Util.allForms lexEntry ]
-      where
-        key = lexId lexEntry
 
 maybeErr :: MonadIO m => IO a -> m (Maybe a)
 maybeErr io = do
@@ -166,10 +168,12 @@ runPolhT path (PolhT r) = runMaybeT $ do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadPolh :: FilePath -> IO (Maybe Polh)
+loadPolh :: FilePath -> IO (Maybe [(Key, LexEntry)])
 loadPolh path = runPolhT path $ do
     keys <- index
-    catMaybes <$> mapM withKey keys
+    catMaybes <$> ( forM keys $ \key -> runMaybeT $ do
+        entry <- maybeT =<< lift (withKey key)
+        return (key, entry) )
 
 -- We don't provide update functionality since we want only the pure
 -- iterface to be visible.  It greatly simplifies the implementation.

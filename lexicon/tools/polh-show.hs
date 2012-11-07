@@ -8,4 +8,4 @@ main = do
     [binPath] <- getArgs
     loadPolh binPath >>= \x -> case x of
         Nothing -> error "Not a dictionary"
-        Just ph -> L.putStr (showPolh ph)
+        Just ph -> L.putStr . showPolh . map snd $ ph
