@@ -22,7 +22,7 @@ module NLP.Polh.Binary
 
 import Prelude hiding (lookup)
 import Control.Exception (try, SomeException)
-import Control.Monad (when, guard, forM)
+import Control.Monad (when, guard)
 import Control.Monad.Trans.Class (MonadTrans)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Applicative (Applicative, (<$>))
@@ -169,12 +169,10 @@ runPolhT path (PolhT r) = runMaybeT $ do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadPolh :: FilePath -> IO (Maybe [(Key, LexEntry)])
+loadPolh :: FilePath -> IO (Maybe Polh)
 loadPolh path = runPolhT path $ do
     keys <- index
-    catMaybes <$> ( forM keys $ \key -> runMaybeT $ do
-        entry <- maybeT =<< lift (withKey key)
-        return (key, entry) )
+    catMaybes <$> mapM withKey keys
 
 -- We don't provide update functionality since we want only the pure
 -- iterface to be visible.  It greatly simplifies the implementation.
