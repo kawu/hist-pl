@@ -111,10 +111,10 @@ buildTrie polhPath poliPath = do
     -- TODO: Filter one-word forms?
     baseMap <- Poli.mkBaseMap . filter oneWordEntry
            <$> Poli.readPoliMorf poliPath
-    let polh = case H.loadPolh polhPath of
-            Nothing -> error "buildTrie: not a polh dictionary"
-            Just xs -> mkPolh xs
-        polh' = Poli.merge baseMap $ M.fromList polh
+    polh <- H.loadPolh polhPath >>= \x -> case x of
+        Nothing -> error "buildTrie: not a polh dictionary"
+        Just xs -> return $ mkPolh xs
+    let polh' = Poli.merge baseMap $ M.fromList polh
     return $ Trie.fromList $ map (first mkKey) (M.assocs polh')
   where
     mkPolh dict =
