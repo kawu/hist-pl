@@ -3,12 +3,6 @@
 
 -- | The module provides functions for working with the binary
 -- representation of the historical dictionary of Polish.
--- The dictionary is stored on a disk but we assume that it
--- doesn't change throughtout the program session so that we
--- can provide the pure interface for dictionary reading
--- and searching.
--- FIXME: Update docs.  It is no longer a pure implementation
--- of dictionary!
 
 module NLP.Polh.Binary
 ( Key
@@ -156,15 +150,12 @@ lookup x = do
 -- | Execute the Polh monad against the binary Polh representation
 -- located in the given directory.  Return Nothing if the directory
 -- doesnt' exist or if it doesn't look like a Polh dictionary.
--- We assume that the binary representation doesn't change so we
--- can provide the pure interface.
 runPolh :: FilePath -> PolhM a -> IO (Maybe a)
 runPolh path polh = runPolhT path polh
 
 -- | Execute the Polh monad transformer against the binary Polh representation
 -- located in the given directory.  Return Nothing if the directory doesnt'
--- exist or if it doesn't look like a Polh dictionary.  We assume that the
--- binary representation doesn't change so we can provide the pure interface.
+-- exist or if it doesn't look like a Polh dictionary.
 runPolhT :: MonadIO m => FilePath -> PolhT m a -> m (Maybe a)
 runPolhT path (PolhT r) = runMaybeT $ do
     formMap' <- maybeErrT $ decodeFile (path </> formMapFile)
