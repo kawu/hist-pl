@@ -6,6 +6,6 @@ import NLP.Polh.Binary (loadPolh)
 
 main = do
     [binPath] <- getArgs
-    case loadPolh binPath of
+    loadPolh binPath >>= \x -> case x of
         Nothing -> error "Not a dictionary"
-        Just ph ->  L.putStr (showPolh ph)
+        Just ph -> L.putStr (showPolh ph)
