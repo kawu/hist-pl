@@ -7,9 +7,13 @@
 -- doesn't change throughtout the program session so that we
 -- can provide the pure interface for dictionary reading
 -- and searching.
+-- FIXME: Update docs.  It is no longer a pure implementation
+-- of dictionary!
 
 module NLP.Polh.Binary
-( savePolh
+( Key
+
+, savePolh
 , loadPolh
 
 , PolhT
@@ -29,7 +33,7 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Applicative (Applicative, (<$>))
 import Control.Monad.Reader (ReaderT (..), ask, lift)
 import Control.Monad.Trans.Maybe (MaybeT (..))
-import System.IO.Unsafe (unsafePerformIO, unsafeInterleaveIO)
+import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, createDirectoryIfMissing
                         , createDirectory, doesDirectoryExist )
@@ -154,8 +158,8 @@ lookup x = do
 -- doesnt' exist or if it doesn't look like a Polh dictionary.
 -- We assume that the binary representation doesn't change so we
 -- can provide the pure interface.
-runPolh :: FilePath -> PolhM a -> Maybe a
-runPolh path polh = unsafePerformIO (runPolhT path polh)
+runPolh :: FilePath -> PolhM a -> IO (Maybe a)
+runPolh path polh = runPolhT path polh
 
 -- | Execute the Polh monad transformer against the binary Polh representation
 -- located in the given directory.  Return Nothing if the directory doesnt'
@@ -171,8 +175,8 @@ runPolhT path (PolhT r) = runMaybeT $ do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadPolh :: FilePath -> Maybe Polh
-loadPolh path = runPolh path $ do
+loadPolh :: FilePath -> IO (Maybe Polh)
+loadPolh path = runPolhT path $ do
     keys <- index
     catMaybes <$> mapM withKey keys
 
