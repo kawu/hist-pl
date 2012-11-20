@@ -2,12 +2,19 @@
 {-# LANGUAGE ScopedTypeVariables #-} 
 {-# LANGUAGE RecordWildCards #-} 
 {-# LANGUAGE OverloadedStrings #-} 
+{-# LANGUAGE TupleSections #-} 
 
 -- | The module provides functions for working with the binary
 -- representation of the historical dictionary of Polish.
 
 module NLP.Polh.Binary
-( Key (..)
+( BinEntry (..)
+, Key (..)
+, Rule (..)
+, proxyForm
+, binKey
+, between
+, apply
 
 , savePolh
 , loadPolh
@@ -161,7 +168,7 @@ maybeErrT io = do
     maybeT r
 
 -- | Load lexical entry from disk by its key.
-loadLexEntry :: FilePath -> Key -> IO (Maybe LexEntry)
+loadLexEntry :: FilePath -> Key -> IO (Maybe BinEntry)
 loadLexEntry path key = do
     maybeErr $ decodeFile (path </> showKey key)
 
@@ -218,13 +225,13 @@ index = PolhT $ do
     map parseKey <$> liftIO (loadContents path)
 
 -- | Extract lexical entry with the given key.
-withKey :: (Applicative m, MonadIO m) => Key -> PolhT m (Maybe LexEntry)
+withKey :: (Applicative m, MonadIO m) => Key -> PolhT m (Maybe BinEntry)
 withKey key = PolhT $ do
     path <- entryPath <$> ask
     liftIO . unsafeInterleaveIO $ loadLexEntry path key
 
 -- | Lookup the form in the dictionary.
-lookup :: (Applicative m, MonadIO m) => T.Text -> PolhT m [LexEntry]
+lookup :: (Applicative m, MonadIO m) => T.Text -> PolhT m [BinEntry]
 lookup x = do
     fm <- PolhT $ formMap <$> ask
     keys <- return $ case D.lookup (T.unpack x) fm of
@@ -251,7 +258,7 @@ runPolhT path (PolhT r) = runMaybeT $ do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadPolh :: FilePath -> IO (Maybe Polh)
+loadPolh :: FilePath -> IO (Maybe [BinEntry])
 loadPolh path = runPolhT path $ do
     keys <- index
     catMaybes <$> mapM withKey keys
