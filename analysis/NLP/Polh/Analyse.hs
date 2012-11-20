@@ -44,7 +44,7 @@ data Token = Token {
       orth  :: T.Text
     -- | Historical interpretations.
     , hist  :: [(H.LexEntry, Poli.RelCode)]
-    -- | Conteporary interpretations.
+    -- | Contemporary interpretations.
     , cont  :: [[F.Interp]] }
     deriving (Show)
 
