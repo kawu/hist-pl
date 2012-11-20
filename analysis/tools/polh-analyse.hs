@@ -11,9 +11,8 @@ import Data.Binary (encodeFile, decodeFile)
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
-import NLP.Polh.Analyse (Trie, buildTrie, anaText, showText)
+import NLP.Polh.Analyse (DAWG, buildDAWG, anaText, showText)
 import NLP.Polh.Binary (PolhM, runPolh)
-import qualified NLP.Adict.DAWG as D
 
 data Args
   = LexMode
@@ -45,17 +44,17 @@ main = exec =<< cmdArgsRun argModes
 exec :: Args -> IO ()
 
 exec LexMode{..} = do
-    trie <- buildTrie polhPath poliPath
-    encodeFile outPath (D.fromTrie trie)
+    dawg <- buildDAWG polhPath poliPath
+    encodeFile outPath dawg
 
 exec AnaMode{..} = do
-    trie <- D.fromDAWG <$> decodeFile anaPath
+    dawg <- decodeFile anaPath
     xs <- L.lines <$> L.getContents 
     _ <- runPolh polhPath $ forM_ xs $ \line -> do
-    	out <- onLine trie line
+    	out <- onLine dawg line
 	lift $ L.putStrLn out
     return ()
 
-onLine :: Trie -> L.Text -> PolhM L.Text
-onLine trie line =
-    showText <$> anaText trie (L.toStrict line)
+onLine :: DAWG -> L.Text -> PolhM L.Text
+onLine dawg line =
+    showText <$> anaText dawg (L.toStrict line)

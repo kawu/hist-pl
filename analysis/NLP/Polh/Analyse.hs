@@ -2,10 +2,10 @@
 
 module NLP.Polh.Analyse
 ( Ana
-, Trie
+, DAWG
 , Token (..)
 , Other (..)
-, buildTrie
+, buildDAWG
 , tokenize
 , anaText
 , anaWord
@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
 import qualified Data.PoliMorf as Poli
-import qualified NLP.Adict.Trie as Trie
+import qualified Data.DAWG as DAWG
 
 import qualified NLP.Polh.Types as H
 import qualified NLP.Polh.Binary as H
@@ -36,7 +36,8 @@ import qualified NLP.Morfeusz as F
 -- | Provisional analysis results.
 type Ana = M.Map H.Key Poli.RelCode
 
-type Trie = Trie.TrieM Char Ana
+-- type Trie = Trie.TrieM Char Ana
+type DAWG = DAWG.DAWG Ana
 
 data Token = Token {
     -- | Orthographic form.
@@ -69,8 +70,8 @@ tokenize =
         | otherwise                 = Left x
 
 -- | Analyse the text.
-anaText :: Trie -> T.Text -> H.PolhM [Either Token Other]
-anaText trie = mapL (anaWord trie) . tokenize
+anaText :: DAWG -> T.Text -> H.PolhM [Either Token Other]
+anaText dawg = mapL (anaWord dawg) . tokenize
 
 -- | Map the function over left elements.
 mapL :: (Functor m, Monad m) => (a -> m a') -> [Either a b] -> m [Either a' b]
@@ -80,22 +81,23 @@ mapL f =
     in  mapM g
 
 -- | Analyse the word.
-anaWord :: Trie -> T.Text -> H.PolhM Token
-anaWord trie x = do
-    _hist <- anaHist trie x
+anaWord :: DAWG -> T.Text -> H.PolhM Token
+anaWord dawg x = do
+    _hist <- anaHist dawg x
     _cont <- return (anaCont x)
     return $ Token x _hist _cont
 
 -- | Analyse the word with respect to the historical dictionary. 
-anaHist :: Trie -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
-anaHist trie x = sequence
+anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
+anaHist dawg x = sequence
     [ (,) <$> follow key <*> pure relCode
     | (key, relCode) <- ana ]
   where
-    ana = case Trie.lookup (mkQ x) trie of
+    ana = case DAWG.lookup (mkQ x) dawg of
         Nothing -> []
         Just xs -> M.toList xs
     follow = fmap fromJust . H.withKey
+    mkQ = T.unpack . T.toLower
 
 -- | Analyse the word using the Morfeusz analyser for contemporary
 -- Polish.
@@ -104,35 +106,26 @@ anaCont = map F.interps . head . F.paths . F.analyse False
 
 -- | Parse the LMF historical dictionary, merge it with the PoliMorf
 -- and return the resulting trie.
-buildTrie
+buildDAWG
     :: FilePath     -- ^ Path to Polh binary dictionary
     -> FilePath     -- ^ Path to PoliMorf
-    -> IO Trie      -- ^ Resulting trie
-buildTrie polhPath poliPath = do
-    -- TODO: Filter one-word forms?
-    baseMap <- Poli.mkBaseMap . filter oneWordEntry
+    -> IO DAWG      -- ^ Resulting trie
+buildDAWG polhPath poliPath = do
+    baseMap <- Poli.mkBaseMap . filter Poli.atomic
            <$> Poli.readPoliMorf poliPath
     polh <- H.loadPolh polhPath >>= \x -> case x of
-        Nothing -> error "buildTrie: not a polh dictionary"
+        Nothing -> error "buildDAWG: not a polh dictionary"
         Just xs -> return $ mkPolh xs
-    let polh' = Poli.merge baseMap $ M.fromList polh
-    return $ Trie.fromList $ map (first mkQ) (M.assocs polh')
+    let polh' = Poli.merge baseMap polh
+    return $ DAWG.fromList $ map (first (map C.toLower)) (DAWG.assocs polh')
   where
-    mkPolh dict =
-        [ (x, S.singleton (H.lexKey entry))
+    mkPolh dict = DAWG.fromListWith S.union
+        [ (T.unpack x, S.singleton (H.lexKey entry))
         | entry <- dict, x <- H.allForms entry, oneWord x ]
-
--- | Is it a one-word entry?
-oneWordEntry :: Poli.Entry -> Bool
-oneWordEntry = oneWord . Poli.form
 
 -- | Is it a one-word text?
 oneWord :: T.Text -> Bool
 oneWord = (==1) . length . T.words
-
--- | Make caseless trie search string from the text.
-mkQ :: T.Text -> String
-mkQ = T.unpack . T.toLower
 
 showText :: [Either Token Other] -> L.Text
 showText = L.toLazyText . mconcat . newlineSep . buildText

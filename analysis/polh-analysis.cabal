@@ -1,5 +1,5 @@
 name:               polh-analyse
-version:            0.1.0
+version:            0.1.1
 synopsis:           Morphosyntactic analysis with Polh dictionary
 description:
     Morphosyntactic analysis using the Polish historical dictionary.
@@ -20,8 +20,8 @@ library
       , containers
       , text
       , polh-lexicon >= 0.2 && < 0.3
-      , adict >= 0.3 && < 0.5
-      , polimorf >= 0.4 && < 0.5
+      , dawg >= 0.5 && < 0.6
+      , polimorf >= 0.5 && < 0.6
       , morfeusz >= 0.4.2 && < 0.5
       , transformers
 
