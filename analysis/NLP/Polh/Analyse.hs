@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module NLP.Polh.Analyse
-( Ana
-, DAWG
+( DAWG
 , Token (..)
 , Other (..)
 , buildDAWG
@@ -14,7 +13,6 @@ module NLP.Polh.Analyse
 ) where
 
 import Control.Applicative ((<$>), (<*>), pure)
-import Control.Arrow (first)
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid, mappend, mconcat)
 import Data.List (intersperse)
@@ -33,11 +31,7 @@ import qualified NLP.Polh.Util as H
 
 import qualified NLP.Morfeusz as F
 
--- | Provisional analysis results.
-type Ana = M.Map H.Key Poli.RelCode
-
--- type Trie = Trie.TrieM Char Ana
-type DAWG = DAWG.DAWG Ana
+type DAWG = DAWG.DAWG (M.Map H.Rule Poli.RelCode)
 
 data Token = Token {
     -- | Orthographic form.
@@ -91,13 +85,13 @@ anaWord dawg x = do
 anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
 anaHist dawg x = sequence
     [ (,) <$> follow key <*> pure relCode
-    | (key, relCode) <- ana ]
+    | (rule, relCode) <- ana
+    , let key = H.apply rule x ]
   where
-    ana = case DAWG.lookup (mkQ x) dawg of
+    ana = case DAWG.lookup (T.unpack x) dawg of
         Nothing -> []
         Just xs -> M.toList xs
-    follow = fmap fromJust . H.withKey
-    mkQ = T.unpack . T.toLower
+    follow = fmap (H.entry . fromJust) . H.withKey
 
 -- | Analyse the word using the Morfeusz analyser for contemporary
 -- Polish.
@@ -117,11 +111,14 @@ buildDAWG polhPath poliPath = do
         Nothing -> error "buildDAWG: not a polh dictionary"
         Just xs -> return $ mkPolh xs
     let polh' = Poli.merge baseMap polh
-    return $ DAWG.fromList $ map (first (map C.toLower)) (DAWG.assocs polh')
+    return . DAWG.fromList $ DAWG.assocs polh'
   where
     mkPolh dict = DAWG.fromListWith S.union
-        [ (T.unpack x, S.singleton (H.lexKey entry))
-        | entry <- dict, x <- H.allForms entry, oneWord x ]
+        [ (T.unpack x, S.singleton (between x binEntry))
+        | binEntry <- dict
+        , x <- H.allForms (H.entry binEntry)
+        , oneWord x ]
+    between x entry = H.between x (H.binKey entry)
 
 -- | Is it a one-word text?
 oneWord :: T.Text -> Bool
