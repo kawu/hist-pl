@@ -67,7 +67,7 @@ tokenize =
 anaText :: DAWG -> T.Text -> H.PolhM [Either Token Other]
 anaText dawg = mapL (anaWord dawg) . tokenize
 
--- | Map the function over left elements.
+-- | Map the monadic function over left elements.
 mapL :: (Functor m, Monad m) => (a -> m a') -> [Either a b] -> m [Either a' b]
 mapL f =
     let g (Left x)  = Left <$> f x
@@ -83,14 +83,21 @@ anaWord dawg x = do
 
 -- | Analyse the word with respect to the historical dictionary. 
 anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
-anaHist dawg x = sequence
+anaHist dawg word = sequence
     [ (,) <$> follow key <*> pure relCode
-    | (rule, relCode) <- ana
-    , let key = H.apply rule x ]
+    | (key, relCode) <- M.toList keys ]
   where
-    ana = case DAWG.lookup (T.unpack x) dawg of
+    -- Analyse both the original form and the lowercased form.
+--     keys = M.unionWith max
+--         (keysOn word)
+--         (keysOn (T.toLower word))
+    keys = keysOn word
+    keysOn x = M.fromList
+        [ (H.apply rule x, relCode)
+        | (rule, relCode) <- ana x ]
+    ana x = case DAWG.lookup (T.unpack x) dawg of
         Nothing -> []
-        Just xs -> M.toList xs
+        Just m  -> M.toList m
     follow = fmap (H.entry . fromJust) . H.withKey
 
 -- | Analyse the word using the Morfeusz analyser for contemporary
@@ -110,7 +117,7 @@ buildDAWG polhPath poliPath = do
     polh <- H.loadPolh polhPath >>= \x -> case x of
         Nothing -> error "buildDAWG: not a polh dictionary"
         Just xs -> return $ mkPolh xs
-    let polh' = Poli.merge baseMap polh
+    let polh' = Poli.mergeWith join baseMap polh
     return . DAWG.fromList $ DAWG.assocs polh'
   where
     mkPolh dict = DAWG.fromListWith S.union
@@ -119,6 +126,14 @@ buildDAWG polhPath poliPath = do
         , x <- H.allForms (H.entry binEntry)
         , oneWord x ]
     between x entry = H.between x (H.binKey entry)
+    -- Determine rule which translates x'S to the same key as the
+    -- y'rule translates y'S to.
+    join x'S y'S y'rule =
+        H.between x k
+      where
+        x = T.pack x'S
+        y = T.pack y'S
+        k = H.apply y'rule y
 
 -- | Is it a one-word text?
 oneWord :: T.Text -> Bool
