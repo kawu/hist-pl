@@ -88,10 +88,9 @@ anaHist dawg word = sequence
     | (key, relCode) <- M.toList keys ]
   where
     -- Analyse both the original form and the lowercased form.
---     keys = M.unionWith max
---         (keysOn word)
---         (keysOn (T.toLower word))
-    keys = keysOn word
+    keys = M.unionWith max
+        (keysOn word)
+        (keysOn (T.toLower word))
     keysOn x = M.fromList
         [ (H.apply rule x, relCode)
         | (rule, relCode) <- ana x ]
