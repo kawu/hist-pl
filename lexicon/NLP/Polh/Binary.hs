@@ -46,9 +46,15 @@ import Data.Binary (Binary, get, put, encodeFile, decodeFile)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.DAWG as D
+import qualified Data.DAWG.Trans.Map as D
 
 import NLP.Polh.Types
 import qualified NLP.Polh.Util as Util
+
+type DAWG a = D.DAWG D.Trans Char a
+
+mkDictWith :: Ord a => (a -> a -> a) -> [(String, a)] -> DAWG a
+mkDictWith = D.fromListWith
 
 -- | Path to entries in the binary dictionary.
 entryDir :: String
@@ -117,7 +123,7 @@ saveLexEntry path x =
     let binPath = showKey . binKey
     in  encodeFile (path </> binPath x) x
 
-withUid :: D.DAWG Int -> LexEntry -> (D.DAWG Int, BinEntry)
+withUid :: DAWG Int -> LexEntry -> (DAWG Int, BinEntry)
 withUid m x =
     let path = T.unpack (proxyForm x)
         num  = maybe 0 id (D.lookup path m) + 1
@@ -136,7 +142,7 @@ savePolh path xs = do
         error $ "savePolh: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
-    formMap' <- D.fromListWith S.union . concat
+    formMap' <- mkDictWith S.union . concat
         <$> mapIO'Lazy (saveLex lexPath) (withUids xs)
     encodeFile (path </> formMapFile) formMap'
   where
@@ -205,7 +211,7 @@ between source dest =
 -- | Binary dictionary data kept in program memory.
 data MemData = MemData
     { polhPath  :: FilePath
-    , formMap   :: D.DAWG (S.Set Rule) }
+    , formMap   :: DAWG (S.Set Rule) }
 
 -- | A Polh monad transformer.
 newtype PolhT m a = PolhT (ReaderT MemData m a)
