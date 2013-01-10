@@ -45,16 +45,14 @@ import Data.List (mapAccumL)
 import Data.Binary (Binary, get, put, encodeFile, decodeFile)
 import qualified Data.Set as S
 import qualified Data.Text as T
-import qualified Data.DAWG as D
-import qualified Data.DAWG.Trans.Map as D
+import qualified Data.DAWG.Dynamic as DD
+import qualified Data.DAWG.Static as D
 
 import NLP.Polh.Types
 import qualified NLP.Polh.Util as Util
 
-type DAWG a = D.DAWG D.Trans Char a
-
-mkDictWith :: Ord a => (a -> a -> a) -> [(String, a)] -> DAWG a
-mkDictWith = D.fromListWith
+-- | Static DAWG version.
+type DAWG a  = D.DAWG Char () a
 
 -- | Path to entries in the binary dictionary.
 entryDir :: String
@@ -123,11 +121,14 @@ saveLexEntry path x =
     let binPath = showKey . binKey
     in  encodeFile (path </> binPath x) x
 
-withUid :: DAWG Int -> LexEntry -> (DAWG Int, BinEntry)
+withUid :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, BinEntry)
 withUid m x =
     let path = T.unpack (proxyForm x)
-        num  = maybe 0 id (D.lookup path m) + 1
-    in  (D.insert path num m, BinEntry x num)
+        num  = maybe 0 id (DD.lookup path m) + 1
+    in  (DD.insert path num m, BinEntry x num)
+
+withUids :: [LexEntry] -> [BinEntry]
+withUids = snd . mapAccumL withUid DD.empty
 
 mapIO'Lazy :: (a -> IO b) -> [a] -> IO [b]
 mapIO'Lazy f (x:xs) = (:) <$> f x <*> unsafeInterleaveIO (mapIO'Lazy f xs)
@@ -142,11 +143,10 @@ savePolh path xs = do
         error $ "savePolh: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
-    formMap' <- mkDictWith S.union . concat
+    formMap' <- D.fromListWith S.union . concat
         <$> mapIO'Lazy (saveLex lexPath) (withUids xs)
     encodeFile (path </> formMapFile) formMap'
   where
-    withUids = snd . mapAccumL withUid D.empty
     saveLex lexPath x = do
         saveLexEntry lexPath x
         return $ rules x

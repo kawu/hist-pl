@@ -23,7 +23,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
 import qualified Data.PoliMorf as Poli
-import qualified Data.DAWG as DAWG
+import qualified Data.DAWG.Static as DAWG
 
 import qualified NLP.Polh.Types as H
 import qualified NLP.Polh.Binary as H
@@ -31,7 +31,7 @@ import qualified NLP.Polh.Util as H
 
 import qualified NLP.Morfeusz as F
 
-type DAWG = DAWG.DAWG (M.Map H.Rule Poli.RelCode)
+type DAWG = DAWG.DAWG Char () (M.Map H.Rule Poli.RelCode)
 
 data Token = Token {
     -- | Orthographic form.
