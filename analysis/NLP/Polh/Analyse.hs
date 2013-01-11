@@ -15,29 +15,31 @@ module NLP.Polh.Analyse
 import Control.Applicative ((<$>), (<*>), pure)
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid, mappend, mconcat)
-import Data.List (intersperse)
+import Data.Ord (comparing)
+import Data.List (sortBy, intersperse)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
-import qualified Data.PoliMorf as Poli
 import qualified Data.DAWG.Static as DAWG
+import qualified Data.PoliMorf as Poli
 
 import qualified NLP.Polh.Types as H
 import qualified NLP.Polh.Binary as H
 import qualified NLP.Polh.Util as H
+import qualified NLP.Polh.Fusion as Fusion
 
 import qualified NLP.Morfeusz as F
 
-type DAWG = DAWG.DAWG Char () (M.Map H.Rule Poli.RelCode)
+type DAWG = DAWG.DAWG Char () (M.Map H.Rule Fusion.RelCode)
 
 data Token = Token {
     -- | Orthographic form.
       orth  :: T.Text
     -- | Historical interpretations.
-    , hist  :: [(H.LexEntry, Poli.RelCode)]
+    , hist  :: [(H.LexEntry, Fusion.RelCode)]
     -- | Contemporary interpretations.
     , cont  :: [[F.Interp]] }
     deriving (Show)
@@ -82,13 +84,13 @@ anaWord dawg x = do
     return $ Token x _hist _cont
 
 -- | Analyse the word with respect to the historical dictionary. 
-anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Poli.RelCode)]
+anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Fusion.RelCode)]
 anaHist dawg word = sequence
     [ (,) <$> follow key <*> pure relCode
     | (key, relCode) <- M.toList keys ]
   where
     -- Analyse both the original form and the lowercased form.
-    keys = M.unionWith max
+    keys = M.unionWith min
         (keysOn word)
         (keysOn (T.toLower word))
     keysOn x = M.fromList
@@ -104,19 +106,19 @@ anaHist dawg word = sequence
 anaCont :: T.Text -> [[F.Interp]]
 anaCont = map F.interps . head . F.paths . F.analyse False
 
--- | Parse the LMF historical dictionary, merge it with the PoliMorf
--- and return the resulting trie.
+-- | Parse the LMF historical dictionary, merge it with PoliMorf
+-- and return the resulting DAWG.
 buildDAWG
     :: FilePath     -- ^ Path to Polh binary dictionary
     -> FilePath     -- ^ Path to PoliMorf
-    -> IO DAWG      -- ^ Resulting trie
+    -> IO DAWG      -- ^ Resulting DAWG
 buildDAWG polhPath poliPath = do
-    baseMap <- Poli.mkBaseMap . filter Poli.atomic
+    baseMap <- Fusion.mkBaseMap . filter Poli.atomic
            <$> Poli.readPoliMorf poliPath
     polh <- H.loadPolh polhPath >>= \x -> case x of
         Nothing -> error "buildDAWG: not a polh dictionary"
         Just xs -> return $ mkPolh xs
-    let polh' = Poli.mergeWith join baseMap polh
+    let polh' = Fusion.mergeWith join baseMap polh
     return . DAWG.fromList $ DAWG.assocs polh'
   where
     mkPolh dict = DAWG.fromListWith S.union
@@ -150,23 +152,30 @@ buildText xs = "sent:" :
 buildTok :: Token -> [L.Builder]
 buildTok tok
     =  buildHead tok
-    :  map (indent . buildHist) (hist tok)
+    :  map (indent . buildHist) histInterps
     -- ++ concatMap buildCont (cont tok)
+  where
+    histInterps = sortBy (comparing snd) (hist tok)
 
 buildHead :: Token -> L.Builder
 buildHead tok = "word: " <> L.fromText (orth tok)
 
 -- | Build a list of historical interpretations.
-buildHist :: (H.LexEntry, Poli.RelCode) -> L.Builder
-buildHist (entry, _code)
-    =  "hist: "
-    <> buildPos <> " "
-    <> commaRepr (H.lemma entry)
+buildHist :: (H.LexEntry, Fusion.RelCode) -> L.Builder
+buildHist (entry, code)
+    =  "hist: " <> buildID (H.lexId entry, code)
+    <> " "      <> buildPos
+    <> ": "      <> commaRepr (H.lemma entry)
 --     <> " " <> "tags: "
   where
+    buildID (id', cd') = "[" <> L.fromText id' <> ", " <> buildCode cd' <> "]"
     buildPos = case H.pos entry of
         [] -> "-"
         xs -> mconcat . commaSep . map L.fromText $ xs
+    buildCode code' = case code' of
+        Fusion.Exact  -> "exact"
+        Fusion.ByBase -> "base"
+        Fusion.ByForm -> "form"
 
 buildOther :: Other -> [L.Builder]
 buildOther (Space _) = ["<space>"]
