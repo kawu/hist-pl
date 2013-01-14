@@ -1,5 +1,5 @@
 name:               polh-fusion
-version:            0.1
+version:            0.2
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
@@ -27,6 +27,7 @@ library
 
     exposed-modules:
         NLP.Polh.Fusion
+      , NLP.Polh.Test
 
     ghc-options: -Wall
 

@@ -10,9 +10,12 @@
 
 module NLP.Polh.Fusion
 ( 
--- * Dictionary
+-- * Rules
   Rule (..)
 , apply
+, between
+
+-- * Dictionary
 , DAWG
 , AnaMap
 , mkAnaMap
