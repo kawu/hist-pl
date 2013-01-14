@@ -8,7 +8,9 @@ module NLP.Polh.Test
 , between
 ) where
 
+import Prelude hiding (lookup)
 import Control.Applicative ((<$>), (<*>))
+import Data.Maybe (maybeToList)
 import Data.Binary (Binary, get, put)
 import Data.Text.Binary ()
 import Data.PoliMorf (POS)
@@ -56,19 +58,26 @@ type DAWG a = D.DAWG Char () a
 
 -- | One-way dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type Dict i a b = DAWG (M.Map i (M.Map Rule b, a))
--- type Dict = DAWG (M.Map POS (S.Set Rule))
+type Dict i a b = DAWG (M.Map i (a, M.Map Rule b))
 
--- LexID i = (Base, i)?
+lookup :: Ord i => T.Text -> Dict i a b -> M.Map i (a, M.Map Word b)
+lookup x'Text dict = M.fromList
+    [ (i, (a, M.fromList
+        [ (apply rule x'Text, b)
+        | (rule, b) <- M.assocs ruleMap ]))
+    | m <- lookup' x'Text dict
+    , (i, (a, ruleMap)) <- M.assocs m ]
+  where
+    lookup' x = maybeToList . D.lookup (T.unpack x)
 
 mkDict :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Dict i a b
 mkDict xs = D.fromListWith union $
     [ ( T.unpack x
       , M.singleton i
-        (M.singleton (between x y) b, a) )
+        (a, M.singleton (between x y) b) )
     | (x, i, a, y, b) <- xs ]
   where
-    union = M.unionWith $ both M.union const
+    union = M.unionWith $ both const M.union
     both f g (x, y) (x', y') = (f x x', g y y')
 
 -- Dictionary keys include base forms and rules transform base forms to
@@ -91,54 +100,86 @@ data Bila i a b = Bila
 type Hist = Dict UID (S.Set POS) IsBase
 
 -- | Entry from historical dictionary.
-data HLex = HLex
-    { hUID      :: UID
+data HLex a = HLex
+    { hKey      :: T.Text
+    , hUID      :: UID
     , hPOSs     :: S.Set POS
-    , hWords    :: M.Map Word IsBase }
+    , hWords    :: M.Map Word a }
     deriving (Show, Eq, Ord)
 
 -- | List all lexical entries from historical dictionary.
-histLexs :: Hist -> [HLex]
+histLexs :: Hist -> [HLex IsBase]
 histLexs hist =
-    [ HLex uid poss $ M.fromList
+    [ HLex key'Text uid poss $ M.fromList
         [ (apply rule key'Text, isBase)
         | (rule, isBase)    <- M.assocs rules ]
     | (key, idMap)          <- D.assocs hist
     , let key'Text          =  T.pack key
-    , (uid, (rules, poss))  <- M.assocs idMap ]
+    , (uid, (poss, rules))  <- M.assocs idMap ]
 
 type LexID = (Base, POS)
 
 type LexSet = M.Map LexID (S.Set Word)
 
-type Corresp a b = Bila POS a b -> HLex -> LexSet
+type Corresp a b = Bila POS a b -> HLex IsBase -> LexSet
 
-buildCorresp
-    :: (Bila POS a b -> HLex -> [LexSet])   -- ^ Core function
-    -> (LexID -> S.Set Word -> Bool)        -- ^ Filter
-    -> ([LexSet] -> LexSet)                 -- ^ Choice
-    -> Corresp a b
-buildCorresp core filt choice bila
+type Core a b = Bila POS a b -> HLex IsBase -> [LexSet]
+
+byForms :: Core a b
+byForms Bila{..} HLex{..} =
+    [ byForm word
+    | word <- M.keys hWords ]
+  where
+    lookupL x = M.assocs . lookup x
+    byForm word = M.fromList
+        [ ( (base, pos) 
+          , S.fromList
+            [ word'
+            | (_, (_, wordMap)) <- lookupL base baseDict
+            , word' <- M.keys wordMap ] )
+        | (pos, (_, baseMap)) <- lookupL word formDict
+        , base <- M.keys baseMap ]
+
+type Filter = HLex IsBase -> (LexID, S.Set Word) -> Bool
+
+posFilter :: Filter
+posFilter HLex{..} ((_, pos), _) = pos `S.member` hPOSs
+
+type Choice   = [LexSet] -> LexSet
+
+sumChoice :: Choice
+sumChoice = M.unions
+
+buildCorresp :: Core a b -> Filter -> Choice -> Corresp a b
+buildCorresp core filt choice bila hLex
     = choice
     . map filterSet
     . core bila
+    $ hLex
   where
     filterSet :: LexSet -> LexSet
     filterSet
         = M.fromList
-        . filter (uncurry filt)
+        . filter (filt hLex)
         . M.assocs
-
-extend :: HLex -> LexSet -> HLex
-extend = undefined
 
 data Code
     = Orig
-    | Copied
+    | Copy
     deriving (Show, Eq, Ord)
 
--- fuse :: Corresp a b -> Hist -> Bila POS a b -> Dict UID () Code
--- fuse corr hist bila = D.fromList
---     [ let HLex{..} = extend hlex (corr bila lex)
---       in  
---     | lex <- histLexs hist ]
+extend :: HLex a -> LexSet -> HLex Code
+extend HLex{..} lexSet = HLex hKey hUID hPOSs . M.fromList $
+    [ (word, Orig)
+    | (word, _) <- M.assocs hWords ]
+        ++
+    [ (word, Copy)
+    | (_, wordSet) <- M.assocs lexSet
+    , word <- S.elems wordSet ]
+
+fuse :: Corresp a b -> Hist -> Bila POS a b -> Dict UID () Code
+fuse corr hist bila = mkDict
+    [ (hKey, hUID, (), word, code)
+    | hLex <- histLexs hist
+    , let HLex{..} = extend hLex (corr bila hLex)
+    , (word, code) <- M.assocs hWords ]
