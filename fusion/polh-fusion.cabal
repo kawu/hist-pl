@@ -34,3 +34,11 @@ library
 source-repository head
     type: git
     location: https://github.com/kawu/polh.git
+
+executable polh-fuse
+    build-depends:
+        binary
+      , cmdargs
+    hs-source-dirs: ., tools
+    main-is: polh-fuse.hs
+    ghc-options: -Wall -O2
