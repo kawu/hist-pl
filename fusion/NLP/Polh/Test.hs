@@ -28,6 +28,7 @@ module NLP.Polh.Test
 
 -- * Historical dictionary
 , Hist
+, mkHist
 , HLex (..)
 , enumHist
 
@@ -64,6 +65,9 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.PoliMorf as P
 import qualified Data.DAWG.Static as D
+
+import qualified NLP.Polh.Types as H
+import qualified NLP.Polh.Binary as H
 
 -- | A rule for translating a form into another one.
 data Rule = Rule {
@@ -183,6 +187,29 @@ fromPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
 -- | Historical dictionary.
 type Hist = Dict UID (S.Set POS) IsBase
 
+-- | Construct historical dictionary.
+mkHist :: [H.BinEntry] -> Hist
+mkHist xs = mkDict
+    [ ( H.keyForm key
+      , H.keyUid key
+      , S.fromList (H.pos entry)
+      , form
+      , isBase )
+    | binEntry <- xs
+    , let key = H.binKey binEntry
+    , let entry = H.entry binEntry
+    , (form, isBase) <-
+        map (,True) (lemmas entry) ++
+        map (,False) (forms entry)
+    , oneWord form ]
+  where
+    lemmas = H.text . H.lemma
+    forms  = concatMap H.text . H.forms
+
+-- | Is it a one-word text?
+oneWord :: T.Text -> Bool
+oneWord = (==1) . length . T.words
+
 -- | Entry from historical dictionary.
 data HLex a = HLex
     { hKey      :: T.Text
@@ -278,6 +305,14 @@ data Code
     = Orig  -- ^ original (was already present in @HLex@)
     | Copy  -- ^ a copy (from corresponding lexeme) 
     deriving (Show, Eq, Ord)
+
+instance Binary Code where
+    put Orig = put '1'
+    put Copy = put '2'
+    get = get >>= \x -> return $ case x of
+        '1' -> Orig
+        '2' -> Copy
+        c   -> error $ "get: invalid Code value '" ++ [c] ++ "'"
 
 -- | Extend lexeme with forms from the set of lexemes.
 extend :: HLex a -> LexSet -> HLex Code

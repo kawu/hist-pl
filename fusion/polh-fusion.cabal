@@ -24,6 +24,7 @@ library
       , text-binary
       , dawg >= 0.9 && < 0.10
       , polimorf >= 0.7 && < 0.8
+      , polh-lexicon >= 0.2 && < 0.3
 
     exposed-modules:
         NLP.Polh.Fusion
