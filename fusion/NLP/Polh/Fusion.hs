@@ -21,6 +21,7 @@ module NLP.Polh.Fusion
 , FormDict
 , mkDict
 , unDict
+, revDict
 , lookup
 -- ** Bilateral
 , Bila (..)
@@ -159,6 +160,12 @@ unDict dict =
     , (i, (a, ruleMap)) <- M.assocs lexSet
     , (rule, b) <- M.assocs ruleMap ]
 
+-- | Reverse the dictionary.
+revDict :: (Ord i, Ord a, Ord b) => Dict i a b -> Dict i a b
+revDict = 
+    let swap (base, i, x, form, y) = (form, i, x, base, y)
+    in  mkDict . map swap . unDict
+
 -- | Bilateral dictionary.
 data Bila i a b = Bila
     { baseDict  :: BaseDict i a b
@@ -185,7 +192,7 @@ fromPoli :: [P.Entry] -> Bila POS () ()
 fromPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
 
 -- | Historical dictionary.
-type Hist = Dict UID (S.Set POS) IsBase
+type Hist = BaseDict UID (S.Set POS) IsBase
 
 -- | Construct historical dictionary.
 mkHist :: [H.BinEntry] -> Hist
@@ -211,6 +218,7 @@ oneWord :: T.Text -> Bool
 oneWord = (==1) . length . T.words
 
 -- | Entry from historical dictionary.
+-- TODO: Use NLP.Polh.Binary.Key instead of hKey and hUID? 
 data HLex a = HLex
     { hKey      :: T.Text
     , hUID      :: UID
@@ -328,7 +336,7 @@ extend HLex{..} lexSet = HLex hKey hUID hPOSs . M.fromList $
 -- dictionary using the given `Corresp` function to determine
 -- contemporary lexemes corresponding to individual lexemes
 -- from historical dictionary.
-fuse :: Corresp a b -> Hist -> Bila POS a b -> Dict UID () Code
+fuse :: Corresp a b -> Hist -> Bila POS a b -> BaseDict UID () Code
 fuse corr hist bila = mkDict
     [ (hKey, hUID, (), word, code)
     | hLex <- enumHist hist

@@ -32,7 +32,7 @@ exec Polh_Fuse{..} = do
     hist <- H.loadPolh polhPath >>= \x -> case x of
     	Nothing -> error "polh-fuse: not a binary historical dictionary"
 	Just xs -> return $ F.mkHist xs
-    let dawg = F.fuse corr hist poli
-    encodeFile outPath dawg
+    let dict = F.fuse corr hist poli
+    encodeFile outPath (F.revDict dict)
   where
     corr = F.buildCorresp F.byForms F.posFilter F.sumChoice
