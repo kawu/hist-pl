@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 
 module NLP.Polh.Test
 (
@@ -6,6 +7,51 @@ module NLP.Polh.Test
   Rule (..)
 , apply
 , between
+
+-- * Basic types
+, UID
+, POS
+, Word
+, Base
+, IsBase
+
+-- * Dictionaries
+, Dict
+, BaseDict
+, FormDict
+, mkDict
+, unDict
+, lookup
+-- ** Bilateral
+, Bila (..)
+, mkBila
+
+-- * Historical dictionary
+, Hist
+, HLex (..)
+, enumHist
+
+-- * Contemporary dictionary
+, fromPoli
+, LexID
+, LexSet
+
+-- * Corresponding lexemes
+, Corresp
+, buildCorresp
+-- ** Components
+, Core
+, Filter
+, Choice
+-- ** Implementations
+, byForms
+, posFilter
+, sumChoice
+
+-- * Fusion
+, Code (..)
+, extend
+, fuse
 ) where
 
 import Prelude hiding (lookup)
@@ -13,10 +59,10 @@ import Control.Applicative ((<$>), (<*>))
 import Data.Maybe (maybeToList)
 import Data.Binary (Binary, get, put)
 import Data.Text.Binary ()
-import Data.PoliMorf (POS)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified Data.PoliMorf as P
 import qualified Data.DAWG.Static as D
 
 -- | A rule for translating a form into another one.
@@ -47,38 +93,24 @@ between source dest =
 
 ------------------------------------------------------------------------
 
--- | Basic types.
+-- | Unique ID in historical dictionary.
 type UID = Int
-type Word = T.Text
-type Base = T.Text
-type IsBase = Bool
 
--- | DAWG with `String` keys.
-type DAWG a = D.DAWG Char () a
+-- | Part of speech.
+type POS = T.Text
+
+-- | Base form.
+type Base = T.Text
+
+-- | Word form.
+type Word = T.Text
+
+-- | Is it a base form?
+type IsBase = Bool
 
 -- | One-way dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type Dict i a b = DAWG (M.Map i (a, M.Map Rule b))
-
-lookup :: Ord i => T.Text -> Dict i a b -> M.Map i (a, M.Map Word b)
-lookup x'Text dict = M.fromList
-    [ (i, (a, M.fromList
-        [ (apply rule x'Text, b)
-        | (rule, b) <- M.assocs ruleMap ]))
-    | m <- lookup' x'Text dict
-    , (i, (a, ruleMap)) <- M.assocs m ]
-  where
-    lookup' x = maybeToList . D.lookup (T.unpack x)
-
-mkDict :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Dict i a b
-mkDict xs = D.fromListWith union $
-    [ ( T.unpack x
-      , M.singleton i
-        (a, M.singleton (between x y) b) )
-    | (x, i, a, y, b) <- xs ]
-  where
-    union = M.unionWith $ both const M.union
-    both f g (x, y) (x', y') = (f x x', g y y')
+type Dict i a b = D.DAWG Char () (M.Map i (a, M.Map Rule b))
 
 -- Dictionary keys include base forms and rules transform base forms to
 -- their corresponding word forms.  Info @a@ is assigned to every lexeme
@@ -90,11 +122,63 @@ type BaseDict i a b = Dict i a b
 -- form.
 type FormDict i a = Dict i () a
 
+-- | Lookup the key in the dictionary.
+lookup :: Ord i => T.Text -> Dict i a b -> M.Map i (a, M.Map Word b)
+lookup x'Text dict = M.fromList
+    [ (i, (a, M.fromList
+        [ (apply rule x'Text, b)
+        | (rule, b) <- M.assocs ruleMap ]))
+    | m <- lookup' x'Text dict
+    , (i, (a, ruleMap)) <- M.assocs m ]
+  where
+    lookup' x = maybeToList . D.lookup (T.unpack x)
+
+-- | Make dictionary from a list of (key, ID, key/ID info, elem,
+-- key/ID/elem info) tuples.
+mkDict :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Dict i a b
+mkDict xs = D.fromListWith union $
+    [ ( T.unpack x
+      , M.singleton i
+        (a, M.singleton (between x y) b) )
+    | (x, i, a, y, b) <- xs ]
+  where
+    union = M.unionWith $ both const M.union
+    both f g (x, y) (x', y') = (f x x', g y y')
+
+-- | Transform dictionary back into the list of (key, ID, key/ID info, elem,
+-- key/ID/elem info) tuples.
+unDict :: (Ord i, Ord a, Ord b) => Dict i a b -> [(T.Text, i, a, T.Text, b)]
+unDict dict =
+    [ (key, i, a, apply rule key, b)
+    | (key'String, lexSet) <- D.assocs dict
+    , let key = T.pack key'String
+    , (i, (a, ruleMap)) <- M.assocs lexSet
+    , (rule, b) <- M.assocs ruleMap ]
+
 -- | Bilateral dictionary.
 data Bila i a b = Bila
     { baseDict  :: BaseDict i a b
     , formDict  :: FormDict i b }
     deriving (Show, Eq, Ord)
+
+instance (Ord i, Binary i, Binary a, Binary b) => Binary (Bila i a b) where
+    put Bila{..} = put baseDict >> put formDict
+    get = Bila <$> get <*> get
+
+-- | Make bilateral dictionary from a list of (base form, ID, additional
+-- lexeme info, word form, additional word form info) tuples.
+mkBila :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Bila i a b
+mkBila xs = Bila
+    { baseDict  = baseDict'
+    , formDict  = formDict' }
+  where
+    baseDict'   = mkDict xs
+    formDict'   = mkDict . map swap . unDict $ baseDict'
+    swap (base, i, _, form, y) = (form, i, (), base, y)
+
+-- | Make bilateral dictionary from PoliMorf.
+fromPoli :: [P.Entry] -> Bila POS () ()
+fromPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
 
 -- | Historical dictionary.
 type Hist = Dict UID (S.Set POS) IsBase
@@ -108,8 +192,8 @@ data HLex a = HLex
     deriving (Show, Eq, Ord)
 
 -- | List all lexical entries from historical dictionary.
-histLexs :: Hist -> [HLex IsBase]
-histLexs hist =
+enumHist :: Hist -> [HLex IsBase]
+enumHist hist =
     [ HLex key'Text uid poss $ M.fromList
         [ (apply rule key'Text, isBase)
         | (rule, isBase)    <- M.assocs rules ]
@@ -212,6 +296,6 @@ extend HLex{..} lexSet = HLex hKey hUID hPOSs . M.fromList $
 fuse :: Corresp a b -> Hist -> Bila POS a b -> Dict UID () Code
 fuse corr hist bila = mkDict
     [ (hKey, hUID, (), word, code)
-    | hLex <- histLexs hist
+    | hLex <- enumHist hist
     , let HLex{..} = extend hLex (corr bila hLex)
     , (word, code) <- M.assocs hWords ]
