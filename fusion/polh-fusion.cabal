@@ -28,7 +28,6 @@ library
 
     exposed-modules:
         NLP.Polh.Fusion
-      , NLP.Polh.Test
 
     ghc-options: -Wall
 
