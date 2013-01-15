@@ -7,47 +7,29 @@ import Control.Applicative ((<$>))
 import Control.Monad (forM_)
 import Control.Monad.Trans.Class (lift)
 import System.Console.CmdArgs
-import Data.Binary (encodeFile, decodeFile)
+import Data.Binary (decodeFile)
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
-import NLP.Polh.Analyse (DAWG, buildDAWG, anaText, showText)
 import NLP.Polh.Binary (PolhM, runPolh)
+import NLP.Polh.Analyse (Hist, anaText, showText)
 
-data Args
-  = LexMode
-    { polhPath      :: FilePath
-    , poliPath      :: FilePath
-    , outPath       :: FilePath }
-  | AnaMode
+data Analyse = Analyse 
     { polhPath      :: FilePath
     , anaPath       :: FilePath }
-  deriving (Data, Typeable, Show)
+    deriving (Data, Typeable, Show)
 
-lexMode :: Args
-lexMode = LexMode
+analyse :: Analyse
+analyse = Analyse
     { polhPath = def &= typ "Polh-Binary" &= argPos 0
-    , poliPath = def &= typ "PoliMorf" &= argPos 1
-    , outPath  = def &= typ "Output-Analysis-DAWG" &= argPos 2 }
-
-anaMode :: Args
-anaMode = AnaMode
-    { polhPath = def &= typ "Polh-Binary" &= argPos 0
-    , anaPath  = def &= typ "Analysis-DAWG" &= argPos 1 }
-
-argModes :: Mode (CmdArgs Args)
-argModes = cmdArgsMode $ modes [lexMode, anaMode]
+    , anaPath  = def &= typ "Fused-DAWG" &= argPos 1 }
 
 main :: IO ()
-main = exec =<< cmdArgsRun argModes
+main = exec =<< cmdArgs analyse
 
-exec :: Args -> IO ()
+exec :: Analyse -> IO ()
 
-exec LexMode{..} = do
-    dawg <- buildDAWG polhPath poliPath
-    encodeFile outPath dawg
-
-exec AnaMode{..} = do
+exec Analyse{..} = do
     dawg <- decodeFile anaPath
     xs <- L.lines <$> L.getContents 
     _ <- runPolh polhPath $ forM_ xs $ \line -> do
@@ -55,6 +37,6 @@ exec AnaMode{..} = do
 	lift $ L.putStrLn out
     return ()
 
-onLine :: DAWG -> L.Text -> PolhM L.Text
+onLine :: Hist -> L.Text -> PolhM L.Text
 onLine dawg line =
     showText <$> anaText dawg (L.toStrict line)

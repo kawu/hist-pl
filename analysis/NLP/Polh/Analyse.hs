@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module NLP.Polh.Analyse
-( DAWG
+( Hist
 , Token (..)
 , Other (..)
-, buildDAWG
 , tokenize
 , anaText
 , anaWord
@@ -17,31 +16,27 @@ import Data.Maybe (fromJust)
 import Data.Monoid (Monoid, mappend, mconcat)
 import Data.Ord (comparing)
 import Data.List (sortBy, intersperse)
-import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
-import qualified Data.DAWG.Static as DAWG
-import qualified Data.PoliMorf as Poli
 
 import qualified NLP.Polh.Types as H
 import qualified NLP.Polh.Binary as H
-import qualified NLP.Polh.Util as H
-import qualified NLP.Polh.Fusion as Fusion
+import qualified NLP.Polh.Fusion as F
 
-import qualified NLP.Morfeusz as F
+import qualified NLP.Morfeusz as R
 
-type DAWG = DAWG.DAWG Char () (M.Map H.Rule Fusion.RelCode)
+type Hist = F.FormDict F.UID F.Code
 
 data Token = Token {
     -- | Orthographic form.
       orth  :: T.Text
     -- | Historical interpretations.
-    , hist  :: [(H.LexEntry, Fusion.RelCode)]
+    , hist  :: [(H.LexEntry, F.Code)]
     -- | Contemporary interpretations.
-    , cont  :: [[F.Interp]] }
+    , cont  :: [[R.Interp]] }
     deriving (Show)
 
 data Other
@@ -66,8 +61,8 @@ tokenize =
         | otherwise                 = Left x
 
 -- | Analyse the text.
-anaText :: DAWG -> T.Text -> H.PolhM [Either Token Other]
-anaText dawg = mapL (anaWord dawg) . tokenize
+anaText :: Hist -> T.Text -> H.PolhM [Either Token Other]
+anaText hd = mapL (anaWord hd) . tokenize
 
 -- | Map the monadic function over left elements.
 mapL :: (Functor m, Monad m) => (a -> m a') -> [Either a b] -> m [Either a' b]
@@ -77,68 +72,32 @@ mapL f =
     in  mapM g
 
 -- | Analyse the word.
-anaWord :: DAWG -> T.Text -> H.PolhM Token
-anaWord dawg x = do
-    _hist <- anaHist dawg x
+anaWord :: Hist -> T.Text -> H.PolhM Token
+anaWord hd x = do
+    _hist <- anaHist hd x
     _cont <- return (anaCont x)
     return $ Token x _hist _cont
 
 -- | Analyse the word with respect to the historical dictionary. 
-anaHist :: DAWG -> T.Text -> H.PolhM [(H.LexEntry, Fusion.RelCode)]
-anaHist dawg word = sequence
-    [ (,) <$> follow key <*> pure relCode
-    | (key, relCode) <- M.toList keys ]
+anaHist :: Hist -> T.Text -> H.PolhM [(H.LexEntry, F.Code)]
+anaHist hd word = sequence
+    [ (,) <$> follow key <*> pure code
+    | (uid, (_, baseMap)) <- M.assocs keys
+    , (base, code) <- M.assocs baseMap
+    , let key = H.Key base uid ]
   where
     -- Analyse both the original form and the lowercased form.
-    keys = M.unionWith min
-        (keysOn word)
-        (keysOn (T.toLower word))
-    keysOn x = M.fromList
-        [ (H.apply rule x, relCode)
-        | (rule, relCode) <- ana x ]
-    ana x = case DAWG.lookup (T.unpack x) dawg of
-        Nothing -> []
-        Just m  -> M.toList m
+    keys = M.unionWith (right (M.unionWith min))
+        (ana word)
+        (ana (T.toLower word))
+    right f (x, y) (_, y') = (x, f y y')
+    ana = flip F.lookup hd
     follow = fmap (H.entry . fromJust) . H.withKey
 
 -- | Analyse the word using the Morfeusz analyser for contemporary
 -- Polish.
-anaCont :: T.Text -> [[F.Interp]]
-anaCont = map F.interps . head . F.paths . F.analyse False
-
--- | Parse the LMF historical dictionary, merge it with PoliMorf
--- and return the resulting DAWG.
-buildDAWG
-    :: FilePath     -- ^ Path to Polh binary dictionary
-    -> FilePath     -- ^ Path to PoliMorf
-    -> IO DAWG      -- ^ Resulting DAWG
-buildDAWG polhPath poliPath = do
-    baseMap <- Fusion.mkBaseMap . filter Poli.atomic
-           <$> Poli.readPoliMorf poliPath
-    polh <- H.loadPolh polhPath >>= \x -> case x of
-        Nothing -> error "buildDAWG: not a polh dictionary"
-        Just xs -> return $ mkPolh xs
-    let polh' = Fusion.mergeWith join baseMap polh
-    return . DAWG.fromList $ DAWG.assocs polh'
-  where
-    mkPolh dict = DAWG.fromListWith S.union
-        [ (T.unpack x, S.singleton (between x binEntry))
-        | binEntry <- dict
-        , x <- H.allForms (H.entry binEntry)
-        , oneWord x ]
-    between x entry = H.between x (H.binKey entry)
-    -- Determine rule which translates x'S to the same key as the
-    -- y'rule translates y'S to.
-    join x'S y'S y'rule =
-        H.between x k
-      where
-        x = T.pack x'S
-        y = T.pack y'S
-        k = H.apply y'rule y
-
--- | Is it a one-word text?
-oneWord :: T.Text -> Bool
-oneWord = (==1) . length . T.words
+anaCont :: T.Text -> [[R.Interp]]
+anaCont = map R.interps . head . R.paths . R.analyse False
 
 showText :: [Either Token Other] -> L.Text
 showText = L.toLazyText . mconcat . newlineSep . buildText
@@ -161,7 +120,7 @@ buildHead :: Token -> L.Builder
 buildHead tok = "word: " <> L.fromText (orth tok)
 
 -- | Build a list of historical interpretations.
-buildHist :: (H.LexEntry, Fusion.RelCode) -> L.Builder
+buildHist :: (H.LexEntry, F.Code) -> L.Builder
 buildHist (entry, code)
     =  "hist: " <> buildID (H.lexId entry, code)
     <> " "      <> buildPos
@@ -173,9 +132,8 @@ buildHist (entry, code)
         [] -> "-"
         xs -> mconcat . commaSep . map L.fromText $ xs
     buildCode code' = case code' of
-        Fusion.Exact  -> "exact"
-        Fusion.ByBase -> "base"
-        Fusion.ByForm -> "form"
+        F.Orig -> "orig"
+        F.Copy -> "copy"
 
 buildOther :: Other -> [L.Builder]
 buildOther (Space _) = ["<space>"]
