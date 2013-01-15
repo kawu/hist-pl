@@ -117,39 +117,65 @@ histLexs hist =
     , let key'Text          =  T.pack key
     , (uid, (poss, rules))  <- M.assocs idMap ]
 
+-- | Lexeme ID in contemporary dictionary (e.g. PoliMorf).
 type LexID = (Base, POS)
 
+-- | Set of lexemes.
 type LexSet = M.Map LexID (S.Set Word)
 
+-- | Type of a function which determines lexemes from a bilateral
+-- dictionary corresponing to a given historical lexeme.
 type Corresp a b = Bila POS a b -> HLex IsBase -> LexSet
 
+-- | We provide three component types, `Core`, `Filter` and `Choice`, which
+-- can be combined together using the `buildCorresp` function to construct
+-- a `Corresp` function.  The first one, `Core`, is used to identify a list
+-- of potential sets of lexemes.  It is natural to define the core function
+-- in such a way because the task of determining corresponding lexemes can
+-- be usually divided into a set of smaller tasks with the same purpose.
+-- For example, we may want to identify @LexSet@s corresponding to individual
+-- word forms of the historical lexeme.
 type Core a b = Bila POS a b -> HLex IsBase -> [LexSet]
 
-byForms :: Core a b
-byForms Bila{..} HLex{..} =
-    [ byForm word
-    | word <- M.keys hWords ]
-  where
-    lookupL x = M.assocs . lookup x
-    byForm word = M.fromList
-        [ ( (base, pos) 
-          , S.fromList
-            [ word'
-            | (_, (_, wordMap)) <- lookupL base baseDict
-            , word' <- M.keys wordMap ] )
-        | (pos, (_, baseMap)) <- lookupL word formDict
-        , base <- M.keys baseMap ]
-
+-- | Function which can be used to filter out lexemes which do not
+-- satisfy a particular predicate.  For example, we may want to filter
+-- out lexemes with incompatible POS value.
 type Filter = HLex IsBase -> (LexID, S.Set Word) -> Bool
 
+-- | The final choice of lexemes.  Many different strategies can be used
+-- here -- sum of the sets, intersection, or voting.
+type Choice   = [LexSet] -> LexSet
+
+-- | Identify @LexSet@s corresponding to individual word forms of the
+-- historical lexeme using the `byForm` function.
+byForms :: Core a b
+byForms bila HLex{..} =
+    [ withForm bila word
+    | word <- M.keys hWords ]
+
+-- | Identify lexemes which contain given word form.
+withForm :: Bila POS a b -> Word -> LexSet
+withForm Bila{..} word = M.fromList
+    [ ( (base, pos) 
+      , S.fromList
+        [ word'
+        | (_, (_, wordMap)) <- lookupL base baseDict
+        , word' <- M.keys wordMap ] )
+    | (pos, (_, baseMap)) <- lookupL word formDict
+    , base <- M.keys baseMap ]
+  where
+    lookupL x = M.assocs . lookup x
+
+-- | Filter out lexemes with POS value incompatible with the
+-- set of POS values assigned to the historical lexeme.
 posFilter :: Filter
 posFilter HLex{..} ((_, pos), _) = pos `S.member` hPOSs
 
-type Choice   = [LexSet] -> LexSet
-
+-- | Sum of sets of lexemes.
 sumChoice :: Choice
 sumChoice = M.unions
 
+-- | Build the `Corresp` function form the individual components.
 buildCorresp :: Core a b -> Filter -> Choice -> Corresp a b
 buildCorresp core filt choice bila hLex
     = choice
@@ -163,11 +189,13 @@ buildCorresp core filt choice bila hLex
         . filter (filt hLex)
         . M.assocs
 
+-- | Code of origin.
 data Code
-    = Orig
-    | Copy
+    = Orig  -- ^ original (was already present in @HLex@)
+    | Copy  -- ^ a copy (from corresponding lexeme) 
     deriving (Show, Eq, Ord)
 
+-- | Extend lexeme with forms from the set of lexemes.
 extend :: HLex a -> LexSet -> HLex Code
 extend HLex{..} lexSet = HLex hKey hUID hPOSs . M.fromList $
     [ (word, Orig)
@@ -177,6 +205,10 @@ extend HLex{..} lexSet = HLex hKey hUID hPOSs . M.fromList $
     | (_, wordSet) <- M.assocs lexSet
     , word <- S.elems wordSet ]
 
+-- | Fuse the historical dictionary with bilateral contemporary
+-- dictionary using the given `Corresp` function to determine
+-- contemporary lexemes corresponding to individual lexemes
+-- from historical dictionary.
 fuse :: Corresp a b -> Hist -> Bila POS a b -> Dict UID () Code
 fuse corr hist bila = mkDict
     [ (hKey, hUID, (), word, code)
