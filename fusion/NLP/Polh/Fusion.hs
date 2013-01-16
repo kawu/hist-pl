@@ -35,6 +35,7 @@ module NLP.Polh.Fusion
 -- ** Bilateral
 , Bila (..)
 , mkBila
+, withForm
 -- ** Historical
 , Hist
 , mkHist
@@ -53,7 +54,6 @@ module NLP.Polh.Fusion
 , Filter
 , Choice
 , byForms
-, withForm
 , posFilter
 , sumChoice
 
@@ -66,7 +66,7 @@ module NLP.Polh.Fusion
 
 import Prelude hiding (lookup)
 import Control.Applicative ((<$>), (<*>))
-import Data.Maybe (maybeToList)
+import Control.Arrow (first)
 import Data.Binary (Binary, get, put)
 import Data.Text.Binary ()
 import qualified Data.Set as S
@@ -121,25 +121,22 @@ type Word = T.Text
 -- | Is the word form a base form?
 type IsBase = Bool
 
--- | One-way dictionary parametrized over ID @i@, with info @a@ for every
--- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type Dict i a b = D.DAWG Char () (M.Map i (a, M.Map Rule b))
-
--- | Dictionary keys represent base forms and rules transform base forms to
--- their corresponding word forms.  Info @a@ is assigned to every lexeme
--- and info @b@ to every word form.
-type BaseDict i a b = Dict i a b
-
--- | Dictionary keys represent word forms and rules transform word forms to
--- their corresponding base forms.  Info @a@ is assigned to every lexeme
--- and info @b@ to every word form.
-type FormDict i a b = Dict i a b
+------------------------------------------------------------------------
 
 -- | A lexical entry.
 data Lex i a b = Lex
     { lexKey    :: LexKey i
     , lexElem   :: LexElem a b }
     deriving (Show, Eq, Ord)
+
+-- | Transform entry into a list.
+listLex :: Lex i a b -> [(T.Text, i, a, T.Text, b)]
+listLex Lex{..} =
+    [ (key, uid, info, word, y)
+    | (word, y) <- M.assocs forms ]
+  where
+    LexKey{..}  = lexKey
+    LexElem{..} = lexElem
 
 -- | Lexical entry dictionary key.
 data LexKey i = LexKey
@@ -164,17 +161,45 @@ mkLexSet = M.fromList . map ((,) <$> lexKey <*> lexElem)
 unLexSet :: LexSet i a b -> [Lex i a b]
 unLexSet = map (uncurry Lex) . M.toList
 
+------------------------------------------------------------------------
+
+type RuleEntry i a b = M.Map i (a, M.Map Rule b)
+
+-- | One-way dictionary parametrized over ID @i@, with info @a@ for every
+-- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
+type Dict i a b = D.DAWG Char () (M.Map i (a, M.Map Rule b))
+
+-- | Dictionary keys represent base forms and rules transform base forms to
+-- their corresponding word forms.  Info @a@ is assigned to every lexeme
+-- and info @b@ to every word form.
+type BaseDict i a b = Dict i a b
+
+-- | Dictionary keys represent word forms and rules transform word forms to
+-- their corresponding base forms.  Info @a@ is assigned to every lexeme
+-- and info @b@ to every word form.
+type FormDict i a b = Dict i a b
+
+-- | Decode dictionary entry.
+decode :: Ord i => T.Text -> RuleEntry i a b -> LexSet i a b
+decode key ruleEntry = mkLexSet
+    [ Lex
+        (LexKey key i)
+        (LexElem x $ M.fromList
+            [ (apply rule key, y)
+            | (rule, y) <- M.assocs ruleMap ])
+    | (i, (x, ruleMap)) <- M.assocs ruleEntry ]
+
 -- | Lookup the key in the dictionary.
 lookup :: Ord i => T.Text -> Dict i a b -> LexSet i a b
-lookup key dict = M.fromList
-    [ ( LexKey key i
-      , LexElem x $ M.fromList
-            [ (apply rule key, y)
-            | (rule, y) <- M.assocs ruleMap ] )
-    | m <- lookup' key dict
-    , (i, (x, ruleMap)) <- M.assocs m ]
-  where
-    lookup' x = maybeToList . D.lookup (T.unpack x)
+lookup key dict = decode key $ case D.lookup (T.unpack key) dict of
+    Just m  -> m
+    Nothing -> M.empty
+
+-- | List dictionary lexical entries.
+entries :: Ord i => Dict i a b -> [Lex i a b]
+entries =
+    let f = unLexSet . uncurry decode . first T.pack 
+    in  concatMap f . D.assocs
 
 -- | Make dictionary from a list of (key, ID, key\/ID info, elem,
 -- key\/ID\/elem info) tuples.
@@ -188,31 +213,18 @@ mkDict xs = D.fromListWith union $
     union = M.unionWith $ both const M.union
     both f g (x, y) (x', y') = (f x x', g y y')
 
--- | List dictionary lexical entries.
-entries :: Dict i a b -> [Lex i a b]
-entries dict =
-    [ Lex (LexKey key' uid') (LexElem x $ M.fromList
-            [ (apply rule key', y)
-            | (rule, y)     <- M.assocs rules ])
-    | (key'String, idMap)   <- D.assocs dict
-    , let key'              =  T.pack key'String
-    , (uid', (x, rules))    <- M.assocs idMap ]
-
 -- | Transform dictionary back into the list of (key, ID, key/ID info, elem,
 -- key/ID/elem info) tuples.
 unDict :: (Ord i, Ord a, Ord b) => Dict i a b -> [(T.Text, i, a, T.Text, b)]
-unDict dict =
-    [ (key, i, a, apply rule key, b)
-    | (key'String, lexSet) <- D.assocs dict
-    , let key = T.pack key'String
-    , (i, (a, ruleMap)) <- M.assocs lexSet
-    , (rule, b) <- M.assocs ruleMap ]
+unDict = concatMap listLex . entries
 
 -- | Reverse the dictionary.
 revDict :: (Ord i, Ord a, Ord b) => Dict i a b -> Dict i a b
 revDict = 
     let swap (base, i, x, form, y) = (form, i, x, base, y)
     in  mkDict . map swap . unDict
+
+------------------------------------------------------------------------
 
 -- | Bilateral dictionary.
 data Bila i a b = Bila
@@ -234,6 +246,15 @@ mkBila xs = Bila
     baseDict'   = mkDict xs
     formDict'   = revDict baseDict'
 
+-- | Identify entries which contain given word form.
+withForm :: Ord i => Bila i a b -> Word -> LexSet i a b
+withForm Bila{..} word = M.unions
+    [ lookup base baseDict
+    | (_, lexElem) <- M.assocs (lookup word formDict)
+    , base <- M.keys (forms lexElem) ]
+
+------------------------------------------------------------------------
+
 -- | PoliMorf dictionary in a bilateral form.
 type Poli = Bila POS () ()
 
@@ -246,6 +267,8 @@ type PLexSet = LexSet POS () ()
 -- | Make bilateral dictionary from PoliMorf.
 mkPoli :: [P.Entry] -> Poli
 mkPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
+
+------------------------------------------------------------------------
 
 -- | Historical dictionary.
 type Hist = BaseDict UID (S.Set POS) IsBase
@@ -272,6 +295,8 @@ mkHist xs = mkDict
     lemmas = H.text . H.lemma
     forms  = concatMap H.text . H.forms
     oneWord = (==1) . length . T.words
+
+------------------------------------------------------------------------
 
 -- | A function which determines entries from a bilateral
 -- dictionary corresponing to a given historical lexeme.
@@ -303,20 +328,6 @@ byForms bila Lex{..} =
     [ withForm bila word
     | word <- M.keys (forms lexElem) ]
 
--- | Identify entries which contain given word form.
-withForm :: Poli -> Word -> PLexSet
-withForm Bila{..} word = M.fromList
-    [ ( LexKey base pos
-      , LexElem () $ M.fromList
-        [ (word', ())
-        | (_, LexElem _ wordMap) <- lookupL base baseDict
-        , word' <- M.keys wordMap ] )
-    | ( LexKey _ pos
-      , LexElem _ baseMap ) <- lookupL word formDict
-    , base <- M.keys baseMap ]
-  where
-    lookupL x = M.assocs . lookup x
-
 -- | Filter out lexemes with POS value incompatible with the
 -- set of POS values assigned to the historical lexeme.
 posFilter :: Filter
@@ -331,6 +342,8 @@ buildCorresp :: Core -> Filter -> Choice -> Corresp
 buildCorresp core filt choice bila hLex =
     let filterSet = mkLexSet . filter (filt hLex) . unLexSet
     in  choice . map filterSet . core bila $ hLex
+
+------------------------------------------------------------------------
 
 -- | Fused dictionary.
 type Fused = BaseDict UID () Code
@@ -354,23 +367,21 @@ instance Binary Code where
 
 -- | Extend lexeme with forms from the set of lexemes.
 extend :: HLex -> PLexSet -> FLex
-extend Lex{..} lexSet = Lex
-    { lexKey    = lexKey
-    , lexElem   = LexElem () . M.fromList $
-        [ (word, Copy)
-        | (_, lexElem') <- M.assocs lexSet
-        , word <- M.keys (forms lexElem') ]
-            ++
-        [ (word, Orig)
-        | word <- M.keys (forms lexElem) ] }
+extend hLex lexSet = subForms . M.fromList $
+    concatMap (fromElem Copy) (M.elems lexSet) ++
+    fromElem Orig (lexElem hLex)
+  where
+    subForms x = hLex { lexElem = LexElem () x }
+    fromElem code = map (,code) . (M.keys . forms)
 
 -- | Fuse the historical dictionary with bilateral contemporary
 -- dictionary using the given `Corresp` function to determine
 -- contemporary lexemes corresponding to individual lexemes
--- from historical dictionary.
+-- from the historical dictionary.
 fuse :: Corresp -> Hist -> Poli -> Fused
 fuse corr hist bila = mkDict
-    [ (key lexKey, uid lexKey, (), word, code)
+    [ (key, uid, (), word, code)
     | hLex <- entries hist
     , let Lex{..} = extend hLex (corr bila hLex)
+    , let LexKey{..} = lexKey
     , (word, code) <- M.assocs (forms lexElem) ]
