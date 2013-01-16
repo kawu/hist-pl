@@ -28,7 +28,7 @@ main = exec =<< cmdArgs polhFuse
 
 exec :: Polh_Fuse -> IO ()
 exec Polh_Fuse{..} = do
-    poli <- F.fromPoli . filter P.atomic <$> P.readPoliMorf poliPath
+    poli <- F.mkPoli . filter P.atomic <$> P.readPoliMorf poliPath
     hist <- H.loadPolh polhPath >>= \x -> case x of
     	Nothing -> error "polh-fuse: not a binary historical dictionary"
 	Just xs -> return $ F.mkHist xs

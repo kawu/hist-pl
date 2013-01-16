@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module NLP.Polh.Analyse
 ( Hist
@@ -28,7 +29,7 @@ import qualified NLP.Polh.Fusion as F
 
 import qualified NLP.Morfeusz as R
 
-type Hist = F.FormDict F.UID F.Code
+type Hist = F.FormDict F.UID () F.Code
 
 data Token = Token {
     -- | Orthographic form.
@@ -81,16 +82,15 @@ anaWord hd x = do
 -- | Analyse the word with respect to the historical dictionary. 
 anaHist :: Hist -> T.Text -> H.PolhM [(H.LexEntry, F.Code)]
 anaHist hd word = sequence
-    [ (,) <$> follow key <*> pure code
-    | (uid, (_, baseMap)) <- M.assocs keys
-    , (base, code) <- M.assocs baseMap
-    , let key = H.Key base uid ]
+    [ (,) <$> follow (H.Key base uid) <*> pure code
+    | (F.LexKey{..}, F.LexElem{..}) <- M.assocs keys
+    , (base, code) <- M.assocs forms ]
   where
     -- Analyse both the original form and the lowercased form.
     keys = M.unionWith (right (M.unionWith min))
         (ana word)
         (ana (T.toLower word))
-    right f (x, y) (_, y') = (x, f y y')
+    right f (F.LexElem x y) (F.LexElem _ y') = F.LexElem x (f y y')
     ana = flip F.lookup hd
     follow = fmap (H.entry . fromJust) . H.withKey
 
