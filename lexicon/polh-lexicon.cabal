@@ -1,5 +1,5 @@
 name:               polh-lexicon
-version:            0.2
+version:            0.2.1
 synopsis:           A library for manipulating the historical dictionary of Polish
 description:
     The library provides a binary representation of the historical
@@ -14,7 +14,7 @@ author:             Jakub Waszczuk
 maintainer:         waszczuk.kuba@gmail.com
 stability:          experimental
 category:           Natural Language Processing
-homepage:           https://github.com/kawu/polh/lexicon
+homepage:           https://github.com/kawu/polh/tree/master/lexicon
 build-type:         Simple
 
 library
