@@ -1,7 +1,7 @@
 import System.Environment (getArgs)
-import NLP.Polh.LMF (readPolh)
-import NLP.Polh.Binary (savePolh)
+import NLP.HistPL.LMF (readLMF)
+import NLP.HistPL.Binary (saveHistPL)
 
 main = do
     [lmfPath, binPath] <- getArgs
-    savePolh binPath =<< readPolh lmfPath
+    saveHistPL binPath =<< readLMF lmfPath

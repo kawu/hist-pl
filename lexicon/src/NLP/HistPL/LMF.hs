@@ -1,9 +1,9 @@
 -- | Re-export modules from the LMF hierarchy.
 
-module NLP.Polh.LMF
-( module NLP.Polh.LMF.Parse
-, module NLP.Polh.LMF.Show
+module NLP.HistPL.LMF
+( module NLP.HistPL.LMF.Parse
+, module NLP.HistPL.LMF.Show
 ) where
 
-import NLP.Polh.LMF.Parse
-import NLP.Polh.LMF.Show
+import NLP.HistPL.LMF.Parse
+import NLP.HistPL.LMF.Show

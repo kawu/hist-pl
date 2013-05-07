@@ -170,7 +170,7 @@ mapIO'Lazy _ []     = return []
 
 
 -- | Save the HistPL dictionary in the empty directory.
-saveHistPL :: FilePath -> HistPL -> IO ()
+saveHistPL :: FilePath -> [LexEntry] -> IO ()
 saveHistPL path xs = do
     createDirectoryIfMissing True path
     isEmpty <- emptyDirectory path
