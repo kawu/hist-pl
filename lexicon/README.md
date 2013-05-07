@@ -9,6 +9,10 @@ LMF representation of the dictionary to a binary form.
 Installation
 ============
 
+You will need [Glasgow Haskell Compiler (GHC)][ghc] and the [Cabal][cabal] tool
+to build polh-lexicon.  The easiest way to get both [GHC][ghc] and [Cabal][cabal]
+is to install the latest [Haskell Platform][haskell-platform].
+
 To install polh-lexicon from the official [Hackage repository][hackage-repo] run:
 
     cabal install polh-lexicon
@@ -18,6 +22,12 @@ update the package list first:
 
     cabal update 
     cabal install polh-lexicon
+
+To install the latest development version from github just run
+
+    cabal install
+
+from the `polh-lexicon` repository directory.
 
 
 Usage
