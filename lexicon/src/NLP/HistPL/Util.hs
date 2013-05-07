@@ -1,13 +1,13 @@
 -- | Some utility functions for working with the dictionary.
 
-module NLP.Polh.Util
+module NLP.HistPL.Util
 ( allForms
 , hasForm
 , addForm
 ) where
 
 import qualified Data.Text as T
-import NLP.Polh.Types
+import NLP.HistPL.Types
 
 -- | All format (base form + other forms) of the lexeme.
 allForms :: LexEntry -> [T.Text]

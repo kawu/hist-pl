@@ -5,7 +5,7 @@
 
 -- | The module provides types for dictionary representation.
 
-module NLP.Polh.Types
+module NLP.HistPL.Types
 ( Repr (..)
 , HasRepr (..)
 , text
@@ -17,7 +17,6 @@ module NLP.Polh.Types
 , SynBehaviour (..)
 , Sense (..)
 , LexEntry (..)
-, Polh
 ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -152,6 +151,3 @@ instance Binary LexEntry where
         put related
     get = LexEntry <$> get <*> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get
-
--- | A polh dictionary is a list of lexical entries.
-type Polh = [LexEntry]

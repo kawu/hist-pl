@@ -1,4 +1,4 @@
-name:               polh-lexicon
+name:               hist-pl-lexicon
 version:            0.3.0
 synopsis:           A library for manipulating the historical dictionary of Polish
 description:
@@ -14,17 +14,17 @@ author:             Jakub Waszczuk
 maintainer:         waszczuk.kuba@gmail.com
 stability:          experimental
 category:           Natural Language Processing
-homepage:           https://github.com/kawu/polh/tree/master/lexicon
+homepage:           https://github.com/kawu/hist-pl/tree/master/lexicon
 build-type:         Simple
 
 library
   hs-source-dirs:   src
-  exposed-modules:    NLP.Polh.Types
-                      NLP.Polh.LMF
-                      NLP.Polh.LMF.Parse
-                      NLP.Polh.LMF.Show
-                      NLP.Polh.Binary
-                      NLP.Polh.Util
+  exposed-modules:    NLP.HistPL.Types
+                      NLP.HistPL.LMF
+                      NLP.HistPL.LMF.Parse
+                      NLP.HistPL.LMF.Show
+                      NLP.HistPL.Binary
+                      NLP.HistPL.Util
   build-depends:      base >= 4 && < 5 
                     , containers
                     , directory
@@ -41,12 +41,12 @@ library
 
 source-repository head
     type: git
-    location: https://github.com/kawu/polh.git
+    location: https://github.com/kawu/hist-pl.git
 
-executable polh-binarize
+executable hpl-binarize
   hs-source-dirs: src, tools
-  main-is: polh-binarize.hs
+  main-is: hpl-binarize.hs
 
-executable polh-show
+executable hpl-show
   hs-source-dirs: src, tools
-  main-is: polh-show.hs
+  main-is: hpl-show.hs

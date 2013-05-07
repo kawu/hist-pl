@@ -2,9 +2,9 @@
 
 -- | The module provides parsing utilities for the LMF dictionary.
 
-module NLP.Polh.LMF.Parse
-( readPolh
-, parsePolh
+module NLP.HistPL.LMF.Parse
+( readLMF
+, parseLMF
 , parseLexEntry
 ) where
 
@@ -16,7 +16,7 @@ import qualified Data.Text.Lazy.IO as L
 import qualified Text.XML.PolySoup as Soup
 import Text.XML.PolySoup hiding (XmlParser, Parser, join)
 
-import NLP.Polh.Types
+import NLP.HistPL.Types
 
 import Debug.Trace (trace)
 
@@ -148,12 +148,12 @@ featP att = L.toStrict <$>
     cut (tag "feat" *> hasAttr "att" att *> getAttr "val")
 
 -- | Read the dictionary from the LMF file.
-readPolh :: FilePath -> IO Polh
-readPolh = fmap parsePolh . L.readFile
+readLMF :: FilePath -> IO [LexEntry]
+readLMF = fmap parseLMF . L.readFile
 
 -- | Parse the entire dictionary in the LMF format.
-parsePolh :: L.Text -> Polh
-parsePolh = parseXml lmfP
+parseLMF :: L.Text -> [LexEntry]
+parseLMF = parseXml lmfP
 
 -- | Parse the lexical entry LMF representation
 parseLexEntry :: L.Text -> LexEntry

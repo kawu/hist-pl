@@ -8,7 +8,7 @@
 -- | The module provides functions for working with the binary
 -- representation of the historical dictionary of Polish.
 --
--- Use the `savePolh` and `loadPolh` functions to save/load
+-- Use the `saveHistPL` and `loadHistPL` functions to save/load
 -- the entire dictionary in/from a given directory.
 --
 -- To search the dictionary use the interface provided with 
@@ -19,7 +19,7 @@
 -- >>>     entry <- lookup "abentair"
 
 
-module NLP.Polh.Binary
+module NLP.HistPL.Binary
 (
 -- * Entries
   BinEntry (..)
@@ -33,10 +33,10 @@ module NLP.Polh.Binary
 , apply
 
 -- * Save
-, savePolh
+, saveHistPL
 
 -- * Load
-, loadPolh
+, loadHistPL
 
 -- * Binary
 , HistPL
@@ -66,8 +66,8 @@ import qualified Data.Text as T
 import qualified Data.DAWG.Dynamic as DD
 import qualified Data.DAWG.Static as D
 
-import NLP.Polh.Types
-import qualified NLP.Polh.Util as Util
+import NLP.HistPL.Types
+import qualified NLP.HistPL.Util as Util
 
 
 -- | Static DAWG version.
@@ -88,15 +88,15 @@ formMapFile = "forms.bin"
 -- entry and corresponding unique identifier.
 data BinEntry = BinEntry {
     -- | Lexical entry.
-      entry :: LexEntry
+      lexEntry  :: LexEntry
     -- | Unique identifier among lexical entries with the same first form
     -- (see 'Key' data type).
-    , uid   :: Int }
+    , uid       :: Int }
     deriving (Show, Eq, Ord)
 
 
 instance Binary BinEntry where
-    put BinEntry{..} = put entry >> put uid
+    put BinEntry{..} = put lexEntry >> put uid
     get = BinEntry <$> get <*> get
 
 
@@ -118,7 +118,7 @@ proxyForm entry = case Util.allForms entry of
 
 -- | Key assigned to the binary entry.
 binKey :: BinEntry -> Key
-binKey BinEntry{..} = Key (proxyForm entry) uid
+binKey BinEntry{..} = Key (proxyForm lexEntry) uid
 
 
 -- | Convert the key to the path where binary representation of the entry
@@ -169,13 +169,13 @@ mapIO'Lazy f (x:xs) = (:) <$> f x <*> unsafeInterleaveIO (mapIO'Lazy f xs)
 mapIO'Lazy _ []     = return []
 
 
--- | Save the polh dictionary in the empty directory.
-savePolh :: FilePath -> Polh -> IO ()
-savePolh path xs = do
+-- | Save the HistPL dictionary in the empty directory.
+saveHistPL :: FilePath -> HistPL -> IO ()
+saveHistPL path xs = do
     createDirectoryIfMissing True path
     isEmpty <- emptyDirectory path
     when (not isEmpty) $ do
-        error $ "savePolh: directory " ++ path ++ " is not empty"
+        error $ "saveHistPL: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
     formMap' <- D.fromListWith S.union . concat
@@ -188,7 +188,7 @@ savePolh path xs = do
     rules binEntry =
         [ ( T.unpack x
           , S.singleton (between x key) )
-        | x <- Util.allForms (entry binEntry) ]
+        | x <- Util.allForms (lexEntry binEntry) ]
       where
         key = binKey binEntry
 
@@ -196,8 +196,8 @@ savePolh path xs = do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadPolh :: FilePath -> IO (Maybe [BinEntry])
-loadPolh path = runMaybeT $ do
+loadHistPL :: FilePath -> IO (Maybe [BinEntry])
+loadHistPL path = runMaybeT $ do
     hpl  <- MaybeT $ openHistPL path
     lift $ do
         keys <- getIndex hpl
@@ -276,7 +276,7 @@ between source dest =
 -- | A binary dictionary handle.
 data HistPL = HistPL {
     -- | A path to the binary dictionary.
-      polhPath  :: FilePath
+      dictPath  :: FilePath
     -- | A map with lexicon forms.
     , formMap   :: DAWG (S.Set Rule)
     }
@@ -284,7 +284,7 @@ data HistPL = HistPL {
 
 -- | Path to directory with entries.
 entryPath :: HistPL -> FilePath
-entryPath = (</> entryDir) . polhPath
+entryPath = (</> entryDir) . dictPath
 
 
 -- | Open the binary dictionary residing in the given directory.

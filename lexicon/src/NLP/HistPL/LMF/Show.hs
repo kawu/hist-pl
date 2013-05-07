@@ -2,8 +2,8 @@
 
 -- | Printing utilities for the LMF dictionary format.
 
-module NLP.Polh.LMF.Show
-( showPolh
+module NLP.HistPL.LMF.Show
+( showLMF
 , showLexEntry
 ) where
 
@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
 import Text.XML.PolySoup (escapeXml)
 
-import NLP.Polh.Types
+import NLP.HistPL.Types
 
 -- | An infix synonym for 'mappend'.
 {-# INLINE (<>) #-}
@@ -48,8 +48,8 @@ epilog =
     , "</LexicalResource>" ]
 
 -- | Show the entire dictionary as a lazy text in the LMF format.
-showPolh :: Polh -> L.Text
-showPolh =
+showLMF :: [LexEntry] -> L.Text
+showLMF =
     L.toLazyText . mconcat . map (<> "\n") . embed . concatMap buildLexEntry
     where embed body = prolog ++ map (ident.ident) body ++ epilog
 
