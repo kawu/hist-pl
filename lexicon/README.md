@@ -1,7 +1,9 @@
 polh-lexicon
 ============
 
-The polh-lexicon library provides a binary representation of the historical dictionary of Polish and language markup format (LMF) parsing utilities which allow to translate the original LMF representation of the dictionary to the binary form. 
+The polh-lexicon package implements a binary representation of the historical dictionary of Polish.
+It also provides language markup format (LMF) parsing utilities which allow to translate the original
+LMF representation of the dictionary to a binary form.
 
 
 Installation
@@ -20,6 +22,11 @@ update the package list first:
 
 Usage
 =====
+
+The polh-lexicon package consists of tools, which can be used to convert
+between the LMF and the binary reprensetation of the dictionary, and a library,
+which can be used to programmaticaly communicate with the binary dictionary
+(and perform lookup, for example).
 
 Binarization
 ------------
@@ -44,7 +51,19 @@ To convert the binary dictionary into the LMF format use the `polh-show` command
 Library
 -------
 
-TODO
+The library provides a monadic interface to access the contents of the
+binary dictionary.  If the binary dictionary resides in a `srpsdp.bin`
+directory, you can use the following Haskell code to lookup a word:
+
+```haskell
+inc x = x + 1
+```
+
+
+[hackage-repo]: http://hackage.haskell.org/package/polh-lexicon "polh-lexicon Hackage repository"
+[ghc]: http://www.haskell.org/ghc "Glasgow Haskell Compiler"
+[cabal]: http://www.haskell.org/cabal "Cabal"
+[haskell-platform]: http://www.haskell.org/platform "Haskell Platform"
 
 
 <!--
