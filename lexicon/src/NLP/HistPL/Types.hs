@@ -3,7 +3,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
--- | The module provides types for dictionary representation.
+-- | A data type hierarchy provided by this module mirrors
+-- the hierarchy of structures kept in the original, LMF
+-- representation of the historical dictionary of Polish.
 
 module NLP.HistPL.Types
 ( Repr (..)

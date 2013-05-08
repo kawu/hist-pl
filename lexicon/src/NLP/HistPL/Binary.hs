@@ -5,18 +5,40 @@
 {-# LANGUAGE TupleSections #-} 
 
 
--- | The module provides functions for working with the binary
--- representation of the historical dictionary of Polish.
---
--- Use the `saveHistPL` and `loadHistPL` functions to save/load
--- the entire dictionary in/from a given directory.
---
--- To search the dictionary use the interface provided with 
--- the `PH` monad.  For example, to lookup a word in the
--- dictionary use the `lookup` function:
---
--- >>> runPH "srpsdp.bin" $ do
--- >>>     entry <- lookup "abentair"
+{-|
+    The module provides functions for working with the binary
+    representation of the historical dictionary of Polish.
+
+    The modelu is intended to be imported qualified, to avoid name
+    clashes with Prelude functions, e.g. 
+
+    > import qualified NLP.HistPL.Binary as H
+   
+    Use `save` and `load` functions to save/load
+    the entire dictionary in/from a given directory.  They are
+    particularly useful when you want convert the @LMF@ dictionary
+    to a binary format (see "NLP.HistPL.LMF" module).
+   
+    To search the dictionary, open the binary directory with an
+    `open` function.  For example, during a @GHCi@ interactive
+    session:
+
+    >>> hpl <- H.open "srpsdp.bin"
+   
+    Set the OverloadedStrings extension for convenience:
+
+    >>> :set -XOverloadedStrings
+   
+    To search the dictionary use the `lookup` function, for example:
+
+    >>> entries <- H.lookup hpl "dufliwego"
+
+    You can use functions defined in the "NLP.HistPL.Types" module
+    to query the entries for a particular feature, e.g.
+
+    >>> map (H.text . H.lemma) entries
+    [["dufliwy"]]
+-}
 
 
 module NLP.HistPL.Binary
@@ -32,18 +54,26 @@ module NLP.HistPL.Binary
 , between
 , apply
 
--- * Save
-, saveHistPL
-
--- * Load
-, loadHistPL
-
--- * Binary
+-- * Dictionary
 , HistPL
-, openHistPL
+-- ** Open
+, tryOpen
+, open
+-- ** Query
+, lookup
+, lookupBin
 , getIndex
 , withKey
-, lookup
+
+-- * Conversion
+-- ** Save
+, save
+-- ** Load
+, load
+
+-- * Modules
+-- $modules
+, module NLP.HistPL.Types
 ) where
 
 
@@ -68,6 +98,11 @@ import qualified Data.DAWG.Static as D
 
 import NLP.HistPL.Types
 import qualified NLP.HistPL.Util as Util
+
+{- $modules
+    "NLP.HistPL.Types" module exports hierarchy of data types
+    stored in the binary dictionary.
+-}
 
 
 -- | Static DAWG version.
@@ -170,12 +205,12 @@ mapIO'Lazy _ []     = return []
 
 
 -- | Save the HistPL dictionary in the empty directory.
-saveHistPL :: FilePath -> [LexEntry] -> IO ()
-saveHistPL path xs = do
+save :: FilePath -> [LexEntry] -> IO ()
+save path xs = do
     createDirectoryIfMissing True path
     isEmpty <- emptyDirectory path
     when (not isEmpty) $ do
-        error $ "saveHistPL: directory " ++ path ++ " is not empty"
+        error $ "save: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
     formMap' <- D.fromListWith S.union . concat
@@ -196,9 +231,9 @@ saveHistPL path xs = do
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-loadHistPL :: FilePath -> IO (Maybe [BinEntry])
-loadHistPL path = runMaybeT $ do
-    hpl  <- MaybeT $ openHistPL path
+load :: FilePath -> IO (Maybe [BinEntry])
+load path = runMaybeT $ do
+    hpl  <- MaybeT $ tryOpen path
     lift $ do
         keys <- getIndex hpl
         catMaybes <$> mapM (withKey hpl) keys
@@ -289,13 +324,21 @@ entryPath = (</> entryDir) . dictPath
 
 -- | Open the binary dictionary residing in the given directory.
 -- Return Nothing if the directory doesn't exist or if it doesn't
--- look like a PH dictionary.
-openHistPL :: FilePath -> IO (Maybe HistPL)
-openHistPL path = runMaybeT $ do
+-- constitute a dictionary.
+tryOpen :: FilePath -> IO (Maybe HistPL)
+tryOpen path = runMaybeT $ do
     formMap'    <- maybeErrT $ decodeFile (path </> formMapFile)
     doesExist   <- liftIO $ doesDirectoryExist (path </> entryDir)
     guard doesExist 
     return $ HistPL path formMap'
+
+
+-- | Open the binary dictionary residing in the given directory.
+-- Raise an error if the directory doesn't exist or if it doesn't
+-- constitute a dictionary.
+open :: FilePath -> IO HistPL
+open path = tryOpen path >>=
+    maybe (fail "Failed to open the dictionary") return
 
 
 -- | List of dictionary keys.
@@ -309,8 +352,15 @@ withKey hpl key =  unsafeInterleaveIO $ loadLexEntry (entryPath hpl) key
 
 
 -- | Lookup the form in the dictionary.
-lookup :: HistPL -> T.Text -> IO [BinEntry]
-lookup hpl x = do
+lookup :: HistPL -> T.Text -> IO [LexEntry]
+lookup hpl = fmap (map lexEntry) . lookupBin hpl
+
+
+-- | Lookup the form in the dictionary.  Similar to `lookup`, but
+-- returns the `BinEntry` which can be used to determine place of
+-- the entry in the dictionary storage.
+lookupBin :: HistPL -> T.Text -> IO [BinEntry]
+lookupBin hpl x = do
     let keys = case D.lookup (T.unpack x) (formMap hpl) of
             Nothing -> []
             Just xs -> map (flip apply x) (S.toList xs)
