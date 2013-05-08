@@ -39,9 +39,9 @@ dictionary of Polish created with the tool `hist-pl-binarize` tool
 (see [hist-pl-lexicon][hist-pl-lexicon] for details).
 Then you can run:
 
-    hist-pl-fuse srpsdp.bin PoliMorf-X.X.X.tab ana.dawg
+    hist-pl-fuse srpsdp.bin PoliMorf-X.tab ana.dawg
 
-where `srpsdp.bin` is a directory of the binary dictionary, `PoliMorf-X.X.X.tab`
+where `srpsdp.bin` is a directory of the binary dictionary, `PoliMorf-X.tab`
 is a version of [PoliMorf][polimorf] and `ana.dawg` is a resultant, fused
 dictionary.
 
