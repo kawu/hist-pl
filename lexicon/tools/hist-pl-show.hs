@@ -6,6 +6,4 @@ import qualified NLP.HistPL as H
 
 main = do
     [binPath] <- getArgs
-    H.load binPath >>= \x -> case x of
-        Nothing -> error "Not a dictionary"
-        Just pl -> L.putStr (showLMF $ map H.lexEntry pl)
+    H.load binPath >>= L.putStr . showLMF

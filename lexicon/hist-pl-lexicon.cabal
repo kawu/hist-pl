@@ -1,5 +1,5 @@
 name:               hist-pl-lexicon
-version:            0.3.1
+version:            0.4.0
 synopsis:           A binary representation of the historical dictionary of Polish
 description:
     The library provides a binary representation of the historical

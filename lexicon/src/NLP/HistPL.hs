@@ -60,14 +60,15 @@ module NLP.HistPL
 , open
 -- ** Query
 , lookup
-, lookupBin
 , getIndex
+, tryWithKey
 , withKey
 
 -- * Conversion
 -- ** Save
 , save
 -- ** Load
+, tryLoad
 , load
 
 -- * Modules
@@ -87,7 +88,6 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, createDirectoryIfMissing
                         , createDirectory, doesDirectoryExist )
-import Data.Maybe (catMaybes)
 import Data.List (mapAccumL)
 import Data.Binary (Binary, get, put, encodeFile, decodeFile)
 import qualified Data.Set as S
@@ -129,9 +129,9 @@ data BinEntry = BinEntry {
     deriving (Show, Eq, Ord)
 
 
-instance Binary BinEntry where
-    put BinEntry{..} = put lexEntry >> put uid
-    get = BinEntry <$> get <*> get
+-- instance Binary BinEntry where
+--     put BinEntry{..} = put lexEntry >> put uid
+--     get = BinEntry <$> get <*> get
 
 
 -- | A dictionary key which uniquely identifies the lexical entry.
@@ -181,10 +181,10 @@ emptyDirectory path = null <$> loadContents path
 
 
 -- | Save the binary entry on the disk.
-saveLexEntry :: FilePath -> BinEntry -> IO ()
-saveLexEntry path x =
+saveBinEntry :: FilePath -> BinEntry -> IO ()
+saveBinEntry path x =
     let binPath = showKey . binKey
-    in  encodeFile (path </> binPath x) x
+    in  encodeFile (path </> binPath x) (lexEntry x)
 
 
 withUid :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, BinEntry)
@@ -213,11 +213,11 @@ save path xs = do
     let lexPath = path </> entryDir
     createDirectory lexPath
     formMap' <- D.fromListWith S.union . concat
-        <$> mapIO'Lazy (saveLex lexPath) (withUids xs)
+        <$> mapIO'Lazy (saveBin lexPath) (withUids xs)
     encodeFile (path </> formMapFile) formMap'
   where
-    saveLex lexPath x = do
-        saveLexEntry lexPath x
+    saveBin lexPath x = do
+        saveBinEntry lexPath x
         return $ rules x
     rules binEntry =
         [ ( T.unpack x
@@ -227,15 +227,21 @@ save path xs = do
         key = binKey binEntry
 
 
+-- | Load dictionary from a disk in a lazy manner.  Raise an error
+-- if the path doesn't correspond to a binary representation of the
+-- dictionary. 
+load :: FilePath -> IO [LexEntry]
+load path = tryLoad path >>=
+    maybe (fail "Failed to open the dictionary") return
+
+
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-load :: FilePath -> IO (Maybe [BinEntry])
-load path = runMaybeT $ do
+tryLoad :: FilePath -> IO (Maybe [LexEntry])
+tryLoad path = runMaybeT $ do
     hpl  <- MaybeT $ tryOpen path
-    lift $ do
-        keys <- getIndex hpl
-        catMaybes <$> mapM (withKey hpl) keys
+    lift $ mapM (withKey hpl) =<< getIndex hpl
 
 
 maybeErr :: MonadIO m => IO a -> m (Maybe a)
@@ -258,7 +264,7 @@ maybeErrT io = do
 
 
 -- | Load lexical entry from disk by its key.
-loadLexEntry :: FilePath -> Key -> IO (Maybe BinEntry)
+loadLexEntry :: FilePath -> Key -> IO (Maybe LexEntry)
 loadLexEntry path key = do
     maybeErr $ decodeFile (path </> showKey key)
 
@@ -326,8 +332,8 @@ entryPath = (</> entryDir) . dictPath
 -- constitute a dictionary.
 tryOpen :: FilePath -> IO (Maybe HistPL)
 tryOpen path = runMaybeT $ do
-    formMap'    <- maybeErrT $ decodeFile (path </> formMapFile)
-    doesExist   <- liftIO $ doesDirectoryExist (path </> entryDir)
+    formMap'  <- maybeErrT $ decodeFile (path </> formMapFile)
+    doesExist <- liftIO $ doesDirectoryExist (path </> entryDir)
     guard doesExist 
     return $ HistPL path formMap'
 
@@ -345,22 +351,23 @@ getIndex :: HistPL -> IO [Key]
 getIndex hpl = map parseKey <$> loadContents (entryPath hpl)
 
 
--- | Extract lexical entry with a given key.
-withKey :: HistPL -> Key -> IO (Maybe BinEntry)
-withKey hpl key =  unsafeInterleaveIO $ loadLexEntry (entryPath hpl) key
+-- | Extract lexical entry with a given key.  Return `Nothing` if there
+-- is no entry with such a key.
+tryWithKey :: HistPL -> Key -> IO (Maybe LexEntry)
+tryWithKey hpl key = unsafeInterleaveIO $ loadLexEntry (entryPath hpl) key
+
+
+-- | Extract lexical entry with a given key.  Raise error if there
+-- is no entry with such a key.
+withKey :: HistPL -> Key -> IO LexEntry
+withKey hpl key = tryWithKey hpl key >>= maybe
+    (fail $ "Failed to open entry with the " ++ show key ++ " key") return
 
 
 -- | Lookup the form in the dictionary.
 lookup :: HistPL -> T.Text -> IO [LexEntry]
-lookup hpl = fmap (map lexEntry) . lookupBin hpl
-
-
--- | Lookup the form in the dictionary.  Similar to `lookup`, but
--- returns the `BinEntry` which can be used to determine place of
--- the entry in the dictionary storage.
-lookupBin :: HistPL -> T.Text -> IO [BinEntry]
-lookupBin hpl x = do
+lookup hpl x = do
     let keys = case D.lookup (T.unpack x) (formMap hpl) of
             Nothing -> []
             Just xs -> map (flip apply x) (S.toList xs)
-    catMaybes <$> mapM (withKey hpl) keys
+    mapM (withKey hpl) keys
