@@ -34,7 +34,7 @@ library
 
 source-repository head
     type: git
-    location: https://github.com/kawu/polh.git
+    location: https://github.com/kawu/hist-pl.git
 
 executable hist-pl-fuse
     build-depends:
