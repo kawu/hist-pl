@@ -35,13 +35,13 @@ Usage
 
 The hist-pl-lexicon package consists of tools, which can be used to convert
 between the LMF and the binary reprensetation of the dictionary, and a library,
-which can be used to communicate with the binary dictionary from an
-application level (to perform lookup, for example).
+which can be used to communicate with the binary dictionary from a level
+of application (to perform lookup, for example).
 
 Binarization
 ------------
 
-To binarize the original LMF dictionary into a binary format, use the
+To translate the original LMF dictionary into a binary format, use the
 `hist-pl-binarize` command line tool.
 
     hist-pl-binarize srpsdp.xml srpsdp.bin
@@ -49,7 +49,7 @@ To binarize the original LMF dictionary into a binary format, use the
 where `srpsdp.bin` is a directory to be created for a storage of the
 binary dictionary.
 
-At this point the conversion to the binary format is lossy.
+Be aware, that conversion from LMF to the binary format is lossy at the moment.
 
 Printing
 --------
@@ -57,7 +57,7 @@ Printing
 To convert the binary dictionary into the LMF format use the `hist-pl-show`
 command line tool:
 
-    hist-pl-show srpsdp.bin
+    hist-pl-show srpsdp.bin > srpsdp-prim.xml
 
 Library
 -------
