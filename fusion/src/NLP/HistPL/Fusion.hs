@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 
-module NLP.Polh.Fusion
+module NLP.HistPL.Fusion
 (
 -- * Rule
   Rule (..)
@@ -75,8 +75,7 @@ import qualified Data.Text as T
 import qualified Data.PoliMorf as P
 import qualified Data.DAWG.Static as D
 
-import qualified NLP.Polh.Types as H
-import qualified NLP.Polh.Binary as H
+import qualified NLP.HistPL as H
 
 -- | A rule for translating a form into another form.
 data Rule = Rule {
@@ -286,7 +285,7 @@ mkHist xs = mkDict
       , isBase )
     | binEntry <- xs
     , let key = H.binKey binEntry
-    , let entry = H.entry binEntry
+    , let entry = H.lexEntry binEntry
     , (form, isBase) <-
         map (,True) (lemmas entry) ++
         map (,False) (forms entry)

@@ -27,7 +27,7 @@ To install the latest development version from github just run
 
     cabal install
 
-from the `hist-pl-lexicon` repository directory.
+from the `lexicon` repository directory.
 
 
 Usage

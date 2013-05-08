@@ -3,34 +3,34 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 
-import Control.Applicative ((<$>))
-import System.Console.CmdArgs
-import Data.Binary (encodeFile)
+import           Control.Applicative ((<$>))
+import           System.Console.CmdArgs
+import           Data.Binary (encodeFile)
 
-import qualified NLP.Polh.Binary as H
 import qualified Data.PoliMorf as P
-import qualified NLP.Polh.Fusion as F
+import qualified NLP.HistPL as H
+import qualified NLP.HistPL.Fusion as F
 
-data Polh_Fuse = Polh_Fuse
-    { polhPath      :: FilePath
+data HistPL_Fuse = HistPL_Fuse
+    { histPath      :: FilePath
     , poliPath      :: FilePath
     , outPath       :: FilePath }
   deriving (Data, Typeable, Show)
 
-polhFuse :: Polh_Fuse
-polhFuse = Polh_Fuse
-    { polhPath = def &= typ "Polh-Binary" &= argPos 0
+histFuse :: HistPL_Fuse
+histFuse = HistPL_Fuse
+    { histPath = def &= typ "HistPL-Binary" &= argPos 0
     , poliPath = def &= typ "PoliMorf" &= argPos 1
     , outPath  = def &= typ "Output-Analysis-DAWG" &= argPos 2 }
 
 main :: IO ()
-main = exec =<< cmdArgs polhFuse
+main = exec =<< cmdArgs histFuse
 
-exec :: Polh_Fuse -> IO ()
-exec Polh_Fuse{..} = do
+exec :: HistPL_Fuse -> IO ()
+exec HistPL_Fuse{..} = do
     poli <- F.mkPoli . filter P.atomic <$> P.readPoliMorf poliPath
-    hist <- H.loadPolh polhPath >>= \x -> case x of
-    	Nothing -> error "polh-fuse: not a binary historical dictionary"
+    hist <- H.load histPath >>= \x -> case x of
+    	Nothing -> error "hist-pl-fuse: not a binary historical dictionary"
 	Just xs -> return $ F.mkHist xs
     let dict = F.fuse corr hist poli
     encodeFile outPath (F.revDict dict)

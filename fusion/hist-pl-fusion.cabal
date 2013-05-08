@@ -1,5 +1,5 @@
-name:               polh-fusion
-version:            0.2
+name:               hist-pl-fusion
+version:            0.3.0
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
@@ -12,10 +12,11 @@ author:             Jakub Waszczuk
 maintainer:         waszczuk.kuba@gmail.com
 stability:          experimental
 category:           Natural Language Processing
-homepage:           https://github.com/kawu/polh
+homepage:           https://github.com/kawu/hist-pl/tree/master/fusion
 build-type:         Simple
 
 library
+    hs-source-dirs:   src
     build-depends:
         base >= 4 && < 5
       , containers
@@ -23,11 +24,11 @@ library
       , binary
       , text-binary
       , dawg >= 0.9 && < 0.10
-      , polimorf >= 0.7 && < 0.8
-      , polh-lexicon >= 0.2 && < 0.3
+      , polimorf >= 0.7.1 && < 0.8
+      , hist-pl-lexicon >= 0.3 && < 0.4
 
     exposed-modules:
-        NLP.Polh.Fusion
+        NLP.HistPL.Fusion
 
     ghc-options: -Wall
 
@@ -35,10 +36,10 @@ source-repository head
     type: git
     location: https://github.com/kawu/polh.git
 
-executable polh-fuse
+executable hist-pl-fuse
     build-depends:
         binary
       , cmdargs
-    hs-source-dirs: ., tools
-    main-is: polh-fuse.hs
+    hs-source-dirs: src, tools
+    main-is: hist-pl-fuse.hs
     ghc-options: -Wall -O2
