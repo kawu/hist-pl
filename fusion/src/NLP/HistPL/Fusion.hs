@@ -59,6 +59,7 @@ module NLP.HistPL.Fusion
 
 -- * Fusion
 , Fused
+, FLex
 , Code (..)
 , extend
 , fuse
@@ -212,8 +213,8 @@ mkDict xs = D.fromListWith union $
     union = M.unionWith $ both const M.union
     both f g (x, y) (x', y') = (f x x', g y y')
 
--- | Transform dictionary back into the list of (key, ID, key/ID info, elem,
--- key/ID/elem info) tuples.
+-- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
+-- key\/ID\/elem info) tuples.
 unDict :: (Ord i, Ord a, Ord b) => Dict i a b -> [(T.Text, i, a, T.Text, b)]
 unDict = concatMap listLex . entries
 
