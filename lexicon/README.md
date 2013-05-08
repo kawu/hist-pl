@@ -35,8 +35,8 @@ Usage
 
 The hist-pl-lexicon package consists of tools, which can be used to convert
 between the LMF and the binary reprensetation of the dictionary, and a library,
-which can be used to programmaticaly communicate with the binary dictionary
-(and perform lookup, for example).
+which can be used to communicate with the binary dictionary from an
+application level (to perform lookup, for example).
 
 Binarization
 ------------
@@ -63,19 +63,12 @@ Library
 -------
 
 The library provides a simple interface for accessing the contents of
-the binary dictionary.  In particular, it can be used in a [GHCi][ghci]
-session.
-
-The library provides a monadic interface to access the contents of the
-binary dictionary.  If the binary dictionary resides in a `srpsdp.bin`
-directory, you can use the following Haskell code to lookup a word:
-
-```haskell
-inc x = x + 1
-```
+the binary dictionary.  See the [NLP.HistPL][hist-pl-module] module
+for an example of the library usage and a detailed API description.
 
 
 [hackage-repo]: http://hackage.haskell.org/package/hist-pl-lexicon "hist-pl-lexicon Hackage repository"
+[hist-pl-module]: http://hackage.haskell.org/packages/archive/hist-pl-lexicon/latest/doc/html/NLP-HistPL.html "NLP.HistPL"
 [ghc]: http://www.haskell.org/ghc "Glasgow Haskell Compiler"
 [ghci]: http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html "GHCi"
 [cabal]: http://www.haskell.org/cabal "Cabal"

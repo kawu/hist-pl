@@ -9,19 +9,18 @@
     The module provides functions for working with the binary
     representation of the historical dictionary of Polish.
 
-    The modelu is intended to be imported qualified, to avoid name
+    It is intended to be imported qualified, to avoid name
     clashes with Prelude functions, e.g. 
 
-    > import qualified NLP.HistPL.Binary as H
+    > import qualified NLP.HistPL as H
    
     Use `save` and `load` functions to save/load
     the entire dictionary in/from a given directory.  They are
-    particularly useful when you want convert the @LMF@ dictionary
+    particularly useful when you want to convert the @LMF@ dictionary
     to a binary format (see "NLP.HistPL.LMF" module).
    
     To search the dictionary, open the binary directory with an
-    `open` function.  For example, during a @GHCi@ interactive
-    session:
+    `open` function.  For example, during a @GHCi@ session:
 
     >>> hpl <- H.open "srpsdp.bin"
    
@@ -29,7 +28,7 @@
 
     >>> :set -XOverloadedStrings
    
-    To search the dictionary use the `lookup` function, for example:
+    To search the dictionary use the `lookup` function, e.g.
 
     >>> entries <- H.lookup hpl "dufliwego"
 
@@ -41,7 +40,7 @@
 -}
 
 
-module NLP.HistPL.Binary
+module NLP.HistPL
 (
 -- * Entries
   BinEntry (..)

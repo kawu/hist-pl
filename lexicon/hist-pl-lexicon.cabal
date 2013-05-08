@@ -23,8 +23,8 @@ library
                       NLP.HistPL.LMF
                       NLP.HistPL.LMF.Parse
                       NLP.HistPL.LMF.Show
-                      NLP.HistPL.Binary
                       NLP.HistPL.Util
+                      NLP.HistPL
   build-depends:      base >= 4 && < 5 
                     , containers
                     , directory
