@@ -11,17 +11,17 @@ import Data.Binary (decodeFile)
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
-import NLP.Polh.Binary (PolhM, runPolh)
-import NLP.Polh.Analyse (Hist, anaText, showText)
+import qualified NLP.HistPL as H
+import qualified NLP.HistPL.Analyse as A
 
 data Analyse = Analyse 
-    { polhPath      :: FilePath
+    { histPath      :: FilePath
     , anaPath       :: FilePath }
     deriving (Data, Typeable, Show)
 
 analyse :: Analyse
 analyse = Analyse
-    { polhPath = def &= typ "Polh-Binary" &= argPos 0
+    { histPath = def &= typ "HistPL-Binary" &= argPos 0
     , anaPath  = def &= typ "Fused-DAWG" &= argPos 1 }
 
 main :: IO ()

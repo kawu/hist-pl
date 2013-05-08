@@ -118,20 +118,15 @@ formMapFile :: String
 formMapFile = "forms.bin"
 
 
--- | Entry in the binary dictionary consists of the lexical
--- entry and corresponding unique identifier.
-data BinEntry = BinEntry {
-    -- | Lexical entry.
-      lexEntry  :: LexEntry
-    -- | Unique identifier among lexical entries with the same first form
-    -- (see 'Key' data type).
-    , uid       :: Int }
-    deriving (Show, Eq, Ord)
-
-
--- instance Binary BinEntry where
---     put BinEntry{..} = put lexEntry >> put uid
---     get = BinEntry <$> get <*> get
+-- -- | Entry in the binary dictionary consists of the lexical
+-- -- entry and corresponding unique identifier.
+-- data BinEntry = BinEntry {
+--     -- | Lexical entry.
+--       lexEntry  :: LexEntry
+--     -- | Unique identifier among lexical entries with the same first form
+--     -- (see 'Key' data type).
+--     , uid       :: Int }
+--     deriving (Show, Eq, Ord)
 
 
 -- | A dictionary key which uniquely identifies the lexical entry.
@@ -150,9 +145,9 @@ proxyForm entry = case Util.allForms entry of
     []      -> error "proxyForm: entry with no forms"
 
 
--- | Key assigned to the binary entry.
-binKey :: BinEntry -> Key
-binKey BinEntry{..} = Key (proxyForm lexEntry) uid
+-- -- | Key assigned to the binary entry.
+-- binKey :: BinEntry -> Key
+-- binKey BinEntry{..} = Key (proxyForm lexEntry) uid
 
 
 -- | Convert the key to the path where binary representation of the entry
@@ -180,11 +175,16 @@ emptyDirectory :: FilePath -> IO Bool
 emptyDirectory path = null <$> loadContents path
 
 
--- | Save the binary entry on the disk.
-saveBinEntry :: FilePath -> BinEntry -> IO ()
-saveBinEntry path x =
-    let binPath = showKey . binKey
-    in  encodeFile (path </> binPath x) (lexEntry x)
+-- | Save entry on a disk under the given key.
+saveEntry :: FilePath -> Key -> LexEntry -> IO ()
+saveEntry path x y = encodeFile (path </> showKey x) y
+
+
+-- -- | Save the binary entry on the disk.
+-- saveBinEntry :: FilePath -> BinEntry -> IO ()
+-- saveBinEntry path x =
+--     let binPath = showKey . binKey
+--     in  encodeFile (path </> binPath x) (lexEntry x)
 
 
 withUid :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, BinEntry)
@@ -230,7 +230,7 @@ save path xs = do
 -- | Load dictionary from a disk in a lazy manner.  Raise an error
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-load :: FilePath -> IO [LexEntry]
+load :: FilePath -> IO [(Key, LexEntry)]
 load path = tryLoad path >>=
     maybe (fail "Failed to open the dictionary") return
 
@@ -238,10 +238,14 @@ load path = tryLoad path >>=
 -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
 -- if the path doesn't correspond to a binary representation of the
 -- dictionary. 
-tryLoad :: FilePath -> IO (Maybe [LexEntry])
+tryLoad :: FilePath -> IO (Maybe [(Key, LexEntry)])
 tryLoad path = runMaybeT $ do
     hpl  <- MaybeT $ tryOpen path
-    lift $ mapM (withKey hpl) =<< getIndex hpl
+    -- lift $ mapM (withKey hpl) =<< getIndex hpl
+    keys <- getIndex hpl
+    lift $ sequence
+        [
+        | 
 
 
 maybeErr :: MonadIO m => IO a -> m (Maybe a)
