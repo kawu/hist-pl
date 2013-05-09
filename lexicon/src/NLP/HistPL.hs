@@ -58,7 +58,6 @@ module NLP.HistPL
 , save
 -- ** Load
 , load
-, loadInfo
 
 -- * Modules
 -- $modules
@@ -262,7 +261,7 @@ withKey hpl key = tryWithKey hpl key >>= maybe
 
 -- | Lookup the form in the dictionary.
 -- TODO: Apply word to the map in the result.
-lookup :: HistPL a b -> T.Text -> IO [(LexEntry, a, M.Map D.Word b)]
+lookup :: HistPL a b -> T.Text -> IO [(LexEntry, a, M.Map T.Text b)]
 lookup hpl x = do
     let entry = D.lookup x (formMap hpl)
     sequence
@@ -334,7 +333,7 @@ save
     => FilePath
     -> (LexEntry -> a)              -- ^ Determine value for the
                                     -- particular entry.
-    -> (LexEntry -> D.Word -> b)    -- ^ Determine value for the particular
+    -> (LexEntry -> T.Text -> b)    -- ^ Determine value for the particular
                                     -- (entry, word form) pair.
     -> [LexEntry]
     -> IO (HistPL a b)
@@ -369,6 +368,6 @@ load hpl = do
         return (key, lexEntry)
 
 
--- | Load additional information about the entry.
-loadInfo :: HistPL a b -> Key -> IO (a, M.Map D.Word b)
-loadInfo = undefined
+-- -- | Load additional information about the entry.
+-- loadInfo :: HistPL a b -> Key -> IO (a, M.Map T.Text b)
+-- loadInfo = undefined
