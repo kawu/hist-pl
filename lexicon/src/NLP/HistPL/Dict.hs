@@ -17,6 +17,7 @@ module NLP.HistPL.Dict
 -- ** Entry
 , Key
 , Val
+, Entry
 , mapW
 , encode
 , decode
@@ -90,6 +91,10 @@ type Key = T.Text
 type Val i a w b = M.Map i (a, M.Map w b)
 
 
+-- | An dictionary entry.
+type Entry i a w b = (Key, Val i a w b)
+
+
 -- | Map function over entry word forms.
 mapW :: (Ord i, Ord w') => (w -> w') -> Val i a w b -> Val i a w' b
 mapW f =
@@ -110,8 +115,8 @@ decode = mapW . flip apply
 
 
 -- | Transform entry into a list.
-listEntry :: Key -> Val i a w b -> [(Key, i, a, w, b)]
-listEntry key entry =
+toListE :: Entry i a w b -> [(Key, i, a, w, b)]
+toListE (key, entry) =
     [ (key, uid, info, word, y)
     | (uid, (info, forms)) <- M.assocs entry
     , (word, y) <- M.assocs forms ]
@@ -133,7 +138,7 @@ lookup key dict = decode key $ case D.lookup (T.unpack key) dict of
 
 
 -- | List dictionary lexical entries.
-entries :: Ord i => Dict i a b -> [(Key, Val i a T.Text b)]
+entries :: Ord i => Dict i a b -> [Entry i a T.Text b]
 entries = map f . D.assocs where
     f (key, val) =
         let key' = T.pack key
@@ -155,7 +160,7 @@ fromList xs = D.fromListWith union $
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
 -- key\/ID\/elem info) tuples.
 toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(Key, i, a, T.Text, b)]
-toList = concatMap (uncurry listEntry) . entries
+toList = concatMap toListE . entries
 
 
 -- | Reverse the dictionary.
