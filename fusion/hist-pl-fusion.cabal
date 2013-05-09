@@ -1,5 +1,5 @@
 name:               hist-pl-fusion
-version:            0.3.0
+version:            0.4.0
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
@@ -36,10 +36,10 @@ source-repository head
     type: git
     location: https://github.com/kawu/hist-pl.git
 
-executable hist-pl-fuse
-    build-depends:
-        binary
-      , cmdargs
-    hs-source-dirs: src, tools
-    main-is: hist-pl-fuse.hs
-    ghc-options: -Wall -O2
+-- executable hist-pl-fuse
+--     build-depends:
+--         binary
+--       , cmdargs
+--     hs-source-dirs: src, tools
+--     main-is: hist-pl-fuse.hs
+--     ghc-options: -Wall -O2

@@ -44,6 +44,8 @@ module NLP.HistPL
 (
 -- * Dictionary
   HistPL
+-- ** Key
+, Key (..)
 -- ** Open
 , tryOpen
 , open
