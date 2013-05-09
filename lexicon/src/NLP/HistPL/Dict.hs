@@ -13,7 +13,7 @@ module NLP.HistPL.Dict
 , between
 
 -- * Basic types
-, Main
+, Key
 , Word
 
 -- * Dictionary
@@ -83,8 +83,8 @@ between source dest =
 ------------------------------------------------------------------------
 
 
--- | Main form of an entry (e.g. lemma).
-type Main = T.Text
+-- | Key form of an entry (e.g. lemma).
+type Key = T.Text
 
 
 -- | Word form.
@@ -97,7 +97,7 @@ type Word = T.Text
 
 
 -- | A dictionary entry.  It contains all information about the
--- entry except the main entry form, which constitutes a key
+-- entry except the key form, which constitutes a key
 -- in a `D.DAWG` dictionary.
 type Entry i a w b = M.Map i (a, M.Map w b)
 
@@ -122,9 +122,9 @@ decode = mapW . flip apply
 
 
 -- | Transform entry into a list.
-listEntry :: Main -> Entry i a w b -> [(Main, i, a, w, b)]
-listEntry main entry =
-    [ (main, uid, info, word, y)
+listEntry :: Key -> Entry i a w b -> [(Key, i, a, w, b)]
+listEntry key entry =
+    [ (key, uid, info, word, y)
     | (uid, (info, forms)) <- M.assocs entry
     , (word, y) <- M.assocs forms ]
 
@@ -145,16 +145,16 @@ lookup key dict = decode key $ case D.lookup (T.unpack key) dict of
 
 
 -- | List dictionary lexical entries.
-entries :: Ord i => Dict i a b -> [(Main, Entry i a Word b)]
+entries :: Ord i => Dict i a b -> [(Key, Entry i a Word b)]
 entries = map f . D.assocs where
-    f (main, entry) =
-        let main' = T.pack main
-        in  (main', decode main' entry)
+    f (key, entry) =
+        let key' = T.pack key
+        in  (key', decode key' entry)
 
 
--- | Make dictionary from a list of (main, ID, entry info, word,
+-- | Make dictionary from a list of (key, ID, entry info, word,
 -- entry\/word info) tuples.
-fromList :: (Ord i, Ord a, Ord b) => [(Main, i, a, Word, b)] -> Dict i a b
+fromList :: (Ord i, Ord a, Ord b) => [(Key, i, a, Word, b)] -> Dict i a b
 fromList xs = D.fromListWith union $
     [ ( T.unpack x
       , M.singleton i (a, M.singleton (between x y) b) )
@@ -166,7 +166,7 @@ fromList xs = D.fromListWith union $
 
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
 -- key\/ID\/elem info) tuples.
-toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(Main, i, a, Word, b)]
+toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(Key, i, a, Word, b)]
 toList = concatMap (uncurry listEntry) . entries
 
 

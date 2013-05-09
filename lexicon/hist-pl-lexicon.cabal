@@ -20,11 +20,12 @@ build-type:         Simple
 library
   hs-source-dirs:   src
   exposed-modules:    NLP.HistPL.Types
-                      NLP.HistPL.LMF
-                      NLP.HistPL.LMF.Parse
-                      NLP.HistPL.LMF.Show
-                      NLP.HistPL.Util
-                      NLP.HistPL
+                    , NLP.HistPL.LMF
+                    , NLP.HistPL.LMF.Parse
+                    , NLP.HistPL.LMF.Show
+                    , NLP.HistPL.Util
+                    , NLP.HistPL.Dict
+                    , NLP.HistPL
   build-depends:      base >= 4 && < 5 
                     , containers
                     , directory
@@ -43,10 +44,10 @@ source-repository head
     type: git
     location: https://github.com/kawu/hist-pl.git
 
-executable hist-pl-binarize
-  hs-source-dirs: src, tools
-  main-is: hist-pl-binarize.hs
-
-executable hist-pl-show
-  hs-source-dirs: src, tools
-  main-is: hist-pl-show.hs
+-- executable hist-pl-binarize
+--   hs-source-dirs: src, tools
+--   main-is: hist-pl-binarize.hs
+-- 
+-- executable hist-pl-show
+--   hs-source-dirs: src, tools
+--   main-is: hist-pl-show.hs
