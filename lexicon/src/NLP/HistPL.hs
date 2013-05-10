@@ -45,7 +45,8 @@ module NLP.HistPL
 -- * Dictionary
   HistPL
 -- ** Key
-, Key (..)
+, Key
+, UID
 -- ** Open
 , tryOpen
 , open
@@ -105,32 +106,40 @@ formMapFile = "forms.bin"
 
 
 -- | A dictionary key which uniquely identifies the lexical entry.
-data Key = Key {
-    -- | First form (presumably lemma) of the lexical entry.
-      keyForm   :: T.Text
-    -- | Unique identifier among lexical entries with the same 'keyForm'.
-    , keyUid    :: Int }
-    deriving (Show, Eq, Ord)
+type Key = D.Key UID
+
+
+-- -- | A dictionary key which uniquely identifies the lexical entry.
+-- data Key = Key {
+--     -- | First form (presumably lemma) of the lexical entry.
+--       keyForm   :: T.Text
+--     -- | Unique identifier among lexical entries with the same 'keyForm'.
+--     , keyUid    :: UID }
+--     deriving (Show, Eq, Ord)
+
+
+-- | A unique identifier among entries with the same `keyForm`.
+type UID = Int
 
 
 -- | Form representing the lexical entry.
-proxyForm :: LexEntry -> T.Text
-proxyForm entry = case Util.allForms entry of
+proxy :: LexEntry -> T.Text
+proxy entry = case Util.allForms entry of
     (x:_)   -> x
-    []      -> error "proxyForm: entry with no forms"
+    []      -> error "proxy: entry with no forms"
 
 
 -- | Convert the key to the path where binary representation of the entry
 -- is stored.
 showKey :: Key -> String
-showKey Key{..} = (T.unpack . T.concat) [T.pack (show keyUid), "-", keyForm]
+showKey D.Key{..} = (T.unpack . T.concat) [T.pack (show uid), "-", orth]
 
 
 -- | Parse the key.
 parseKey :: String -> Key
 parseKey x =
     let (uid'S, (_:form'S)) = break (=='-') x
-    in  Key (T.pack form'S) (read uid'S)
+    in  D.Key (T.pack form'S) (read uid'S)
 
 
 -- | Load the directory contents.
@@ -152,10 +161,10 @@ saveEntry path x y = encodeFile (path </> showKey x) y
 
 addKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, (Key, LexEntry))
 addKey m x =
-    let main = proxyForm x
+    let main = proxy x
         path = T.unpack main
         num  = maybe 0 id (DD.lookup path m) + 1
-        key  = Key main num
+        key  = D.Key main num
     in  (DD.insert path num m, (key, x))
 
 
@@ -200,10 +209,6 @@ loadEntry path key = do
 --------------------------------------------------------
 -- Binary interface
 --------------------------------------------------------
-
-
--- | A unique identifier among entries with the same proxy form.
-type UID = Int
 
 
 -- | A binary dictionary holds additional info of type @a@
@@ -263,10 +268,10 @@ withKey hpl key = tryWithKey hpl key >>= maybe
 -- TODO: Apply word to the map in the result.
 lookup :: HistPL -> T.Text -> IO [LexEntry]
 lookup hpl x = do
-    let entry = D.lookup x (formMap hpl)
+    let lexSet = D.lookup x (formMap hpl)
     sequence
-        [ withKey hpl (Key x uid)
-        | uid <- M.keys entry ]
+        [ withKey hpl key
+        | key <- M.keys lexSet ]
 
 
 --------------------------------------------------------
@@ -291,9 +296,9 @@ save path xs = do
   where
     saveBin lexPath (key, lexEntry) = do
         saveEntry lexPath key lexEntry
-        let Key{..} = key
+        let D.Key{..} = key
         return
-            [ (keyForm, keyUid, (), y, ())
+            [ (orth, uid, (), y, ())
             | y <- Util.allForms lexEntry ]
 
 

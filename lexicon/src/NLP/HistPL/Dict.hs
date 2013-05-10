@@ -15,11 +15,10 @@ module NLP.HistPL.Dict
 -- * Dictionary
 , Dict
 -- ** Entry
-, Key
+, Lex (..)
+, Key (..)
 , Val
-, Entry
-, mapW
-, encode
+-- , encode
 , decode
 -- ** Query
 , lookup
@@ -81,45 +80,62 @@ between source dest =
 ------------------------------------------------------------------------
 
 
--- | Key form of an entry (e.g. lemma).
-type Key = T.Text
+-- | A key of a dictionary entry.
+data Key i = Key {
+    -- | A main, orthographic form of the entry.
+      orth  :: T.Text
+    -- | Unique identifier among entries with the same `orth`.
+    , uid   :: i }
+    deriving (Show, Eq, Ord)
 
 
--- | A dictionary value.  It contains all information about the
--- entry except the key form, which constitutes a key in a
--- `D.DAWG` dictionary.
-type Val i a w b = M.Map i (a, M.Map w b)
+-- | A value of the entry.
+type Val a w b = (a, M.Map w b)
 
 
--- | An dictionary entry.
-type Entry i a w b = (Key, Val i a w b)
+-- | A dictionary entry consists of a `Key` and a `Val`ue.
+data Lex i a b = Lex {
+    -- | Entry key.
+      key :: Key i
+    -- | Entry value.
+    , val :: Val a T.Text b }
+    deriving (Show, Eq, Ord)
+
+
+-- | A set of dictionary entries.
+type LexSet i a b = M.Map (Key i) (Val a T.Text b)
+
+
+-- | Actual values stored in automaton states contain
+-- all information but `orth`.
+type Node i a b = M.Map i (a, M.Map Rule b)
 
 
 -- | Map function over entry word forms.
-mapW :: (Ord i, Ord w') => (w -> w') -> Val i a w b -> Val i a w' b
-mapW f =
-    M.fromList . map (second2 mapForms) . M.toList
-  where
-    second2 = second . second
-    mapForms = M.fromList . map (first f) . M.toList
+mapW :: Ord w' => (w -> w') -> Val a w b -> Val a w' b
+mapW f = second $ M.fromList . map (first f) . M.toList
 
 
--- | Encode dictionary value.
-encode :: Ord i => T.Text -> Val i a T.Text b -> Val i a Rule b
-encode = mapW . between
+-- | Encode dictionary value given `orth`.
 
 
--- | Decode dictionary value.
-decode :: Ord i => T.Text -> Val i a Rule b -> Val i a T.Text b
-decode = mapW . flip apply
+-- | Decode dictionary value given `orth`.
+decode :: Ord i => T.Text -> Node i a b -> LexSet i a b
+decode x n = M.fromList
+    [ (Key x i, mapW (flip apply x) val)
+    | (i, val) <- M.toList n ]
+
+
+-- -- | Encode dictionary value.
+-- encode :: Ord i => T.Text -> Val i a T.Text b -> Val i a Rule b
+-- encode = mapW . between
 
 
 -- | Transform entry into a list.
-toListE :: Entry i a w b -> [(Key, i, a, w, b)]
-toListE (key, entry) =
-    [ (key, uid, info, word, y)
-    | (uid, (info, forms)) <- M.assocs entry
-    , (word, y) <- M.assocs forms ]
+toListE :: Lex i a b -> [(T.Text, i, a, T.Text, b)]
+toListE (Lex Key{..} (x, forms)) =
+    [ (orth, uid, x, form, y)
+    | (form, y) <- M.assocs forms ]
 
 
 ------------------------------------------------------------------------
@@ -127,27 +143,26 @@ toListE (key, entry) =
 
 -- | A dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type Dict i a b = D.DAWG Char () (Val i a Rule b)
+type Dict i a b = D.DAWG Char () (Node i a b)
 
 
 -- | Lookup the key in the dictionary.
-lookup :: Ord i => Key -> Dict i a b -> Val i a T.Text b
-lookup key dict = decode key $ case D.lookup (T.unpack key) dict of
+lookup :: Ord i => T.Text -> Dict i a b -> LexSet i a b
+lookup x dict = decode x $ case D.lookup (T.unpack x) dict of
     Just m  -> m
     Nothing -> M.empty
 
 
 -- | List dictionary lexical entries.
-entries :: Ord i => Dict i a b -> [Entry i a T.Text b]
-entries = map f . D.assocs where
-    f (key, val) =
-        let key' = T.pack key
-        in  (key', decode key' val)
+entries :: Ord i => Dict i a b -> [Lex i a b]
+entries = concatMap f . D.assocs where
+    f (key, val) = listIt $ decode (T.pack key) val
+    listIt = map (uncurry Lex) . M.toList
 
 
 -- | Make dictionary from a list of (key, ID, entry info, form,
 -- entry\/form info) tuples.
-fromList :: (Ord i, Ord a, Ord b) => [(Key, i, a, T.Text, b)] -> Dict i a b
+fromList :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Dict i a b
 fromList xs = D.fromListWith union $
     [ ( T.unpack x
       , M.singleton i (a, M.singleton (between x y) b) )
@@ -159,7 +174,7 @@ fromList xs = D.fromListWith union $
 
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
 -- key\/ID\/elem info) tuples.
-toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(Key, i, a, T.Text, b)]
+toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(T.Text, i, a, T.Text, b)]
 toList = concatMap toListE . entries
 
 
