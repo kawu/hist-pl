@@ -18,6 +18,7 @@ module NLP.HistPL.Dict
 , Lex (..)
 , Key (..)
 , Val (..)
+, Node
 -- ** Entry set
 , LexSet
 , mkLexSet
@@ -131,7 +132,7 @@ unLexSet = map (uncurry Lex) . M.toList
 
 
 -- | Actual values stored in automaton states contain
--- all information but `orth`.
+-- all entry information but `orth`.
 type Node i a b = M.Map i (Val a Rule b)
 
 
@@ -142,7 +143,7 @@ mapW f v =
     in  v { forms = g (forms v) }
 
 
--- | Encode dictionary value given `orth`.
+-- -- | Encode dictionary value given `orth`.
 
 
 -- | Decode dictionary value given `orth`.
