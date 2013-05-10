@@ -8,6 +8,7 @@ import           System.Console.CmdArgs
 import           Data.Binary (encodeFile)
 
 import qualified Data.PoliMorf as P
+import           NLP.HistPL.Dict (revDict)
 import qualified NLP.HistPL as H
 import qualified NLP.HistPL.Fusion as F
 
@@ -29,10 +30,9 @@ main = exec =<< cmdArgs histFuse
 exec :: HistPL_Fuse -> IO ()
 exec HistPL_Fuse{..} = do
     poli <- F.mkPoli . filter P.atomic <$> P.readPoliMorf poliPath
-    hist <- H.load histPath >>= \x -> case x of
-    	Nothing -> error "hist-pl-fuse: not a binary historical dictionary"
-	Just xs -> return $ F.mkHist xs
+    hpl <- H.open histPath
+    hist <- F.mkHist <$> H.load hpl
     let dict = F.fuse corr hist poli
-    encodeFile outPath (F.revDict dict)
+    encodeFile outPath (revDict dict)
   where
     corr = F.buildCorresp F.byForms F.posFilter F.sumChoice

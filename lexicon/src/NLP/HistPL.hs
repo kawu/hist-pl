@@ -303,7 +303,9 @@ save path xs = do
 
 
 -- | Load all lexical entries in a lazy manner.
-load :: HistPL -> IO [LexEntry]
+load :: HistPL -> IO [(Key, LexEntry)]
 load hpl = do
     keys <- getIndex hpl
-    forIO'Lazy keys $ withKey hpl
+    forIO'Lazy keys $ \key -> do
+        entry <- withKey hpl key
+        return (key, entry)
