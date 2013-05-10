@@ -6,4 +6,5 @@ import qualified NLP.HistPL as H
 
 main = do
     [binPath] <- getArgs
-    H.load binPath >>= L.putStr . showLMF
+    hpl <- H.open binPath
+    H.load hpl >>= L.putStr . showLMF

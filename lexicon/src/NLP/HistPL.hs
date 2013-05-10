@@ -78,7 +78,7 @@ import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, createDirectoryIfMissing
                         , createDirectory, doesDirectoryExist )
 import Data.List (mapAccumL)
-import Data.Binary (Binary, encodeFile, decodeFile)
+import Data.Binary (encodeFile, decodeFile)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.DAWG.Dynamic as DD
@@ -150,15 +150,13 @@ saveEntry :: FilePath -> Key -> LexEntry -> IO ()
 saveEntry path x y = encodeFile (path </> showKey x) y
 
 
-addKey
-    :: DD.DAWG Char Int -> LexEntry
-    -> (DD.DAWG Char Int, (Key, LexEntry))
+addKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, (Key, LexEntry))
 addKey m x =
     let main = proxyForm x
         path = T.unpack main
         num  = maybe 0 id (DD.lookup path m) + 1
         key  = Key main num
-    in  (DD.insert path num m, (key, x) )
+    in  (DD.insert path num m, (key, x))
 
 
 addKeys :: [LexEntry] -> [(Key, LexEntry)]
@@ -211,23 +209,23 @@ type UID = Int
 -- | A binary dictionary holds additional info of type @a@
 -- for every entry and additional info of type @b@ for every
 -- word form.
-data HistPL a b = HistPL {
+data HistPL = HistPL {
     -- | A path to the binary dictionary.
       dictPath  :: FilePath
-    -- | A map with lexicon forms.
-    , formMap   :: D.Dict UID a b
+    -- | A dictionary with lexicon forms.
+    , formMap   :: D.Dict UID () ()
     }
 
 
 -- | Path to directory with entries.
-entryPath :: HistPL a b -> FilePath
+entryPath :: HistPL -> FilePath
 entryPath = (</> entryDir) . dictPath
 
 
 -- | Open the binary dictionary residing in the given directory.
 -- Return Nothing if the directory doesn't exist or if it doesn't
 -- constitute a dictionary.
-tryOpen :: (Binary a, Binary b) => FilePath -> IO (Maybe (HistPL a b))
+tryOpen :: FilePath -> IO (Maybe HistPL)
 tryOpen path = runMaybeT $ do
     formMap'  <- maybeErrT $ decodeFile (path </> formMapFile)
     doesExist <- liftIO $ doesDirectoryExist (path </> entryDir)
@@ -238,37 +236,37 @@ tryOpen path = runMaybeT $ do
 -- | Open the binary dictionary residing in the given directory.
 -- Raise an error if the directory doesn't exist or if it doesn't
 -- constitute a dictionary.
-open :: (Binary a, Binary b) => FilePath -> IO (HistPL a b)
+open :: FilePath -> IO HistPL
 open path = tryOpen path >>=
     maybe (fail "Failed to open the dictionary") return
 
 
 -- | List of dictionary keys.
-getIndex :: HistPL a b -> IO [Key]
+getIndex :: HistPL -> IO [Key]
 getIndex hpl = map parseKey <$> loadContents (entryPath hpl)
 
 
 -- | Extract lexical entry with a given key.  Return `Nothing` if there
 -- is no entry with such a key.
-tryWithKey :: HistPL a b -> Key -> IO (Maybe LexEntry)
+tryWithKey :: HistPL -> Key -> IO (Maybe LexEntry)
 tryWithKey hpl key = unsafeInterleaveIO $ loadEntry (entryPath hpl) key
 
 
 -- | Extract lexical entry with a given key.  Raise error if there
 -- is no entry with such a key.
-withKey :: HistPL a b -> Key -> IO LexEntry
+withKey :: HistPL -> Key -> IO LexEntry
 withKey hpl key = tryWithKey hpl key >>= maybe
     (fail $ "Failed to open entry with the " ++ show key ++ " key") return
 
 
 -- | Lookup the form in the dictionary.
 -- TODO: Apply word to the map in the result.
-lookup :: HistPL a b -> T.Text -> IO [(LexEntry, a, M.Map T.Text b)]
+lookup :: HistPL -> T.Text -> IO [LexEntry]
 lookup hpl x = do
     let entry = D.lookup x (formMap hpl)
     sequence
-        [ (, a, forms) <$> withKey hpl (Key x uid)
-        | (uid, (a, forms)) <- M.toList entry ]
+        [ withKey hpl (Key x uid)
+        | uid <- M.keys entry ]
 
 
 --------------------------------------------------------
@@ -276,70 +274,10 @@ lookup hpl x = do
 --------------------------------------------------------
 
 
--- -- | Save the HistPL dictionary in the empty directory.
--- save
---     :: (Binary a, Binary b) => FilePath
---     -> [LexEntry]
---     -> IO ()
--- save path xs = do
---     createDirectoryIfMissing True path
---     isEmpty <- emptyDirectory path
---     when (not isEmpty) $ do
---         error $ "save: directory " ++ path ++ " is not empty"
---     let lexPath = path </> entryDir
---     createDirectory lexPath
---     formMap' <- D.fromListWith S.union . concat
---         <$> mapIO'Lazy (saveBin lexPath) (addKeys xs)
---     encodeFile (path </> formMapFile) formMap'
---   where
---     saveBin lexPath x = do
---         saveBinEntry lexPath x
---         return $ rules x
---     rules binEntry =
---         [ ( T.unpack x
---           , S.singleton (between x key) )
---         | x <- Util.allForms (lexEntry binEntry) ]
---       where
---         key = binKey binEntry
--- 
--- 
--- -- | Load dictionary from a disk in a lazy manner.  Raise an error
--- -- if the path doesn't correspond to a binary representation of the
--- -- dictionary. 
--- load :: FilePath -> IO [(Key, LexEntry)]
--- load path = tryLoad path >>=
---     maybe (fail "Failed to open the dictionary") return
--- 
--- 
--- -- | Load dictionary from a disk in a lazy manner.  Return 'Nothing'
--- -- if the path doesn't correspond to a binary representation of the
--- -- dictionary. 
--- tryLoad :: FilePath -> IO (Maybe [(Key, LexEntry)])
--- tryLoad path = runMaybeT $ do
---     hpl  <- MaybeT $ tryOpen path
---     -- lift $ mapM (withKey hpl) =<< getIndex hpl
---     keys <- getIndex hpl
---     lift $ sequence
---         [
---         | 
-
-
 -- | Construct dictionary from a list of lexical entries and save it in
 -- the given directory. 
--- To every entry an additional value of type @a@ will be assigned based
--- on the first given function.
--- Similarly, to every (entry, form) pair an additional value of type @b@
--- will be assigned based on the second given function.
-save
-    :: (Ord a, Binary a, Ord b, Binary b)
-    => FilePath
-    -> (LexEntry -> a)              -- ^ Determine value for the
-                                    -- particular entry.
-    -> (LexEntry -> T.Text -> b)    -- ^ Determine value for the particular
-                                    -- (entry, word form) pair.
-    -> [LexEntry]
-    -> IO (HistPL a b)
-save path f g xs = do
+save :: FilePath -> [LexEntry] -> IO (HistPL)
+save path xs = do
     createDirectoryIfMissing True path
     isEmpty <- emptyDirectory path
     when (not isEmpty) $ do
@@ -354,22 +292,13 @@ save path f g xs = do
     saveBin lexPath (key, lexEntry) = do
         saveEntry lexPath key lexEntry
         let Key{..} = key
-            infoE = f lexEntry
-            infoW = g lexEntry
         return
-            [ (keyForm, keyUid, infoE, y, infoW y)
+            [ (keyForm, keyUid, (), y, ())
             | y <- Util.allForms lexEntry ]
 
 
 -- | Load all lexical entries in a lazy manner.
-load :: HistPL a b -> IO [(Key, LexEntry)]
+load :: HistPL -> IO [LexEntry]
 load hpl = do
     keys <- getIndex hpl
-    forIO'Lazy keys $ \key -> do
-        lexEntry <- withKey hpl key
-        return (key, lexEntry)
-
-
--- -- | Load additional information about the entry.
--- loadInfo :: HistPL a b -> Key -> IO (a, M.Map T.Text b)
--- loadInfo = undefined
+    forIO'Lazy keys $ withKey hpl
