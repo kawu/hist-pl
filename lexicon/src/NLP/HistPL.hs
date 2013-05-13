@@ -125,7 +125,7 @@ proxy entry = case Util.allForms entry of
 -- | Convert the key to the path where binary representation of the entry
 -- is stored.
 showKey :: Key -> String
-showKey D.Key{..} = (T.unpack . T.concat) [T.pack (show uid), "-", orth]
+showKey D.Key{..} = (T.unpack . T.concat) [T.pack (show uid), "-", path]
 
 
 -- | Parse the key.
@@ -281,12 +281,12 @@ lookup :: HistPL -> T.Text -> IO [(Code, LexEntry)]
 lookup hpl x = do
     let lexSet = D.lookup x (formMap hpl)
     sequence
-        [ (getCode val,) <$> withKey hpl key
-        | (key, val) <- M.assocs lexSet ]
+        [ (code, ) <$> withKey hpl key
+        | (code, key) <- getCode =<< M.assocs lexSet ]
   where
-    getCode m = case M.toList (D.forms m) of
-        [(_base, code)] -> code
-        _               -> error "lookup: expected one element in the map"
+    getCode (key, val) =
+        [ (code, key { D.path = base })
+        | (base, code) <- M.toList (D.forms val) ]
 
 
 --------------------------------------------------------
@@ -298,17 +298,17 @@ lookup hpl x = do
 -- the given directory.  To each entry an additional set of forms can
 -- be assigned.  
 save :: FilePath -> [(LexEntry, S.Set T.Text)] -> IO (HistPL)
-save path xs = do
-    createDirectoryIfMissing True path
-    isEmpty <- emptyDirectory path
+save binPath xs = do
+    createDirectoryIfMissing True binPath
+    isEmpty <- emptyDirectory binPath
     when (not isEmpty) $ do
-        error $ "save: directory " ++ path ++ " is not empty"
-    let lexPath = path </> entryDir
+        error $ "save: directory " ++ binPath ++ " is not empty"
+    let lexPath = binPath </> entryDir
     createDirectory lexPath
     formMap' <- D.fromList . concat <$>
         mapIO'Lazy (saveBin lexPath) (zip3 keys entries forms)
-    encodeFile (path </> formMapFile) formMap'
-    return $ HistPL path formMap'
+    encodeFile (binPath </> formMapFile) formMap'
+    return $ HistPL binPath formMap'
   where
     (entries, forms) = unzip xs
     keys = getKeys entries
@@ -319,7 +319,7 @@ save path xs = do
             onlyHist  = S.difference histForms otherForms
             onlyOther = S.difference otherForms histForms
             both      = S.intersection histForms otherForms
-            list c s  = [(orth, uid, (), y, c) | y <- S.toList s]
+            list c s  = [(y, uid, (), path, c) | y <- S.toList s]
         return $ list Orig onlyHist ++ list Copy onlyOther ++ list Both both
 
 

@@ -87,9 +87,9 @@ between source dest =
 
 -- | A key of a dictionary entry.
 data Key i = Key {
-    -- | A main, orthographic form of the entry.
-      orth  :: T.Text
-    -- | Unique identifier among entries with the same `orth`.
+    -- | A path of the entry, i.e. DAWG key.
+      path  :: T.Text
+    -- | Unique identifier among entries with the same `path`.
     , uid   :: i }
     deriving (Show, Eq, Ord)
 
@@ -135,7 +135,7 @@ unLexSet = map (uncurry Lex) . M.toList
 
 
 -- | Actual values stored in automaton states contain
--- all entry information but `orth`.
+-- all entry information but `path`.
 type Node i a b = M.Map i (Val a Rule b)
 
 
@@ -146,25 +146,20 @@ mapW f v =
     in  v { forms = g (forms v) }
 
 
--- -- | Encode dictionary value given `orth`.
+-- | Encode dictionary value given `path`.
 
 
--- | Decode dictionary value given `orth`.
+-- | Decode dictionary value given `path`.
 decode :: Ord i => T.Text -> Node i a b -> LexSet i a b
 decode x n = M.fromList
     [ (Key x i, mapW (flip apply x) val)
     | (i, val) <- M.toList n ]
 
 
--- -- | Encode dictionary value.
--- encode :: Ord i => T.Text -> Val i a T.Text b -> Val i a Rule b
--- encode = mapW . between
-
-
 -- | Transform entry into a list.
 toListE :: Lex i a b -> [(T.Text, i, a, T.Text, b)]
 toListE (Lex Key{..} Val{..}) =
-    [ (orth, uid, info, form, y)
+    [ (path, uid, info, form, y)
     | (form, y) <- M.assocs forms ]
 
 
