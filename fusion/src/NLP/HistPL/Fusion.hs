@@ -15,10 +15,6 @@ module NLP.HistPL.Fusion
 , Bila (..)
 , mkBila
 , withForm
--- ** Historical
-, Hist
-, mkHist
-, HLex
 -- ** Contemporary
 , Poli
 , PLex
@@ -35,26 +31,18 @@ module NLP.HistPL.Fusion
 , byForms
 , posFilter
 , sumChoice
-
--- * Fusion
-, Fused
-, FLex
-, Code (..)
-, extend
-, fuse
 ) where
 
 import Prelude hiding (lookup)
 import Control.Applicative ((<$>), (<*>))
-import Data.Binary (Binary, get, put)
 import Data.Text.Binary ()
-import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.PoliMorf as P
 
 import           NLP.HistPL (UID)
 import qualified NLP.HistPL as H
+import qualified NLP.HistPL.Util as H
 import           NLP.HistPL.Dict
 
 ------------------------------------------------------------------------
@@ -141,37 +129,37 @@ mkPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
 ------------------------------------------------------------------------
 
 
--- | Historical dictionary.
-type Hist = BaseDict UID (S.Set POS) IsBase
-
-
--- | Historical dictionary entry.
-type HLex = Lex UID (S.Set POS) IsBase
-
-
--- | Construct historical dictionary.
-mkHist :: [(H.Key, H.LexEntry)] -> Hist
-mkHist xs = fromList
-    [ ( orth, uid
-      , S.fromList (H.pos lexEntry)
-      , form, isBase )
-    | (key, lexEntry) <- xs
-    , let Key{..} = key
-    , (form, isBase) <-
-        map (,True) (lemmas lexEntry) ++
-        map (,False) (forms lexEntry)
-    , oneWord form ]
-  where
-    lemmas = H.text . H.lemma
-    forms  = concatMap H.text . H.forms
-    oneWord = (==1) . length . T.words
+-- -- | Historical dictionary.
+-- type Hist = BaseDict UID (S.Set POS) IsBase
+-- 
+-- 
+-- -- | Historical dictionary entry.
+-- type HLex = Lex UID (S.Set POS) IsBase
+-- 
+-- 
+-- -- | Construct historical dictionary.
+-- mkHist :: [(H.Key, H.LexEntry)] -> Hist
+-- mkHist xs = fromList
+--     [ ( orth, uid
+--       , S.fromList (H.pos lexEntry)
+--       , form, isBase )
+--     | (key, lexEntry) <- xs
+--     , let Key{..} = key
+--     , (form, isBase) <-
+--         map (,True) (lemmas lexEntry) ++
+--         map (,False) (forms lexEntry)
+--     , oneWord form ]
+--   where
+--     lemmas = H.text . H.lemma
+--     forms  = concatMap H.text . H.forms
+--     oneWord = (==1) . length . T.words
 
 
 ------------------------------------------------------------------------
 
 -- | A function which determines entries from a bilateral
 -- dictionary corresponing to a given historical lexeme.
-type Corresp = Poli -> HLex -> PLexSet
+type Corresp = Poli -> H.LexEntry -> PLexSet
 
 
 -- | We provide three component types, `Core`, `Filter` and `Choice`, which
@@ -182,32 +170,32 @@ type Corresp = Poli -> HLex -> PLexSet
 -- be usually divided into a set of smaller tasks of the same purpose.
 -- For example, we may want to identify `LexSet`s corresponding to individual
 -- word forms of the historical lexeme.
-type Core = Poli -> HLex -> [PLexSet]
+type Core = Poli -> H.LexEntry -> [PLexSet]
 
 
 -- | Function which can be used to filter out lexemes which do not
 -- satisfy a particular predicate.  For example, we may want to filter
 -- out lexemes with incompatible POS value.
-type Filter = HLex -> PLex -> Bool
+type Filter = H.LexEntry -> PLex -> Bool
 
 
 -- | The final choice of lexemes.  Many different strategies can be used
--- here -- sum of the sets, intersection, or voting.
+-- here sum of the sets, intersection, or voting.
 type Choice = [PLexSet] -> PLexSet
 
 
 -- | Identify `LexSet`s corresponding to individual word forms of the
 -- historical lexeme using the `withForm` function.
 byForms :: Core
-byForms bila Lex{..} =
+byForms bila lexEntry =
     [ withForm bila word
-    | word <- M.keys (forms lexVal) ]
+    | word <- H.allForms lexEntry ]
 
 
 -- | Filter out lexemes with POS value incompatible with the
 -- set of POS values assigned to the historical lexeme.
 posFilter :: Filter
-posFilter h p = uid (lexKey p) `S.member` info (lexVal h)
+posFilter h p = uid (lexKey p) `elem` H.pos h
 
 
 -- | Sum of sets of lexemes.
@@ -220,52 +208,3 @@ buildCorresp :: Core -> Filter -> Choice -> Corresp
 buildCorresp core filt choice bila hLex =
     let filterSet = mkLexSet . filter (filt hLex) . unLexSet
     in  choice . map filterSet . core bila $ hLex
-
-
-------------------------------------------------------------------------
-
--- | Fused dictionary.
-type Fused = BaseDict UID () Code
-
-
--- | Fused dictionary entry.
-type FLex = Lex UID () Code
-
-
--- | Code of word form origin.
-data Code
-    = Orig  -- ^ original (was already present in `HLex`)
-    | Copy  -- ^ a copy (from corresponding lexeme)
-    deriving (Show, Eq, Ord)
-
-
-instance Binary Code where
-    put Orig = put '1'
-    put Copy = put '2'
-    get = get >>= \x -> return $ case x of
-        '1' -> Orig
-        '2' -> Copy
-        c   -> error $ "get: invalid Code value '" ++ [c] ++ "'"
-
-
--- | Extend lexeme with forms from the set of lexemes.
-extend :: HLex -> PLexSet -> FLex
-extend hLex lexSet = subForms . M.fromList $
-    concatMap (fromElem Copy) (M.elems lexSet) ++
-    fromElem Orig (lexVal hLex)
-  where
-    subForms x = hLex { lexVal = Val () x }
-    fromElem code = map (,code) . (M.keys . forms)
-
-
--- | Fuse the historical dictionary with bilateral contemporary
--- dictionary using the given `Corresp` function to determine
--- contemporary lexemes corresponding to individual lexemes
--- from the historical dictionary.
-fuse :: Corresp -> Hist -> Poli -> Fused
-fuse corr hist bila = fromList
-    [ (orth, uid, (), form, code)
-    | hLex <- entries hist
-    , let Lex{..} = extend hLex (corr bila hLex)
-    , let Key{..} = lexKey
-    , (form, code) <- M.assocs (forms lexVal) ]
