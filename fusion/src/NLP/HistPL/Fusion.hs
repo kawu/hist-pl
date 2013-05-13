@@ -129,34 +129,6 @@ mkPoli = mkBila . map ((,,(),,()) <$> P.base <*> P.pos <*> P.form)
 ------------------------------------------------------------------------
 
 
--- -- | Historical dictionary.
--- type Hist = BaseDict UID (S.Set POS) IsBase
--- 
--- 
--- -- | Historical dictionary entry.
--- type HLex = Lex UID (S.Set POS) IsBase
--- 
--- 
--- -- | Construct historical dictionary.
--- mkHist :: [(H.Key, H.LexEntry)] -> Hist
--- mkHist xs = fromList
---     [ ( orth, uid
---       , S.fromList (H.pos lexEntry)
---       , form, isBase )
---     | (key, lexEntry) <- xs
---     , let Key{..} = key
---     , (form, isBase) <-
---         map (,True) (lemmas lexEntry) ++
---         map (,False) (forms lexEntry)
---     , oneWord form ]
---   where
---     lemmas = H.text . H.lemma
---     forms  = concatMap H.text . H.forms
---     oneWord = (==1) . length . T.words
-
-
-------------------------------------------------------------------------
-
 -- | A function which determines entries from a bilateral
 -- dictionary corresponing to a given historical lexeme.
 type Corresp = Poli -> H.LexEntry -> PLexSet
