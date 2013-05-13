@@ -152,19 +152,6 @@ saveEntry :: FilePath -> Key -> LexEntry -> IO ()
 saveEntry path x y = encodeFile (path </> showKey x) y
 
 
--- addKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, (Key, LexEntry))
--- addKey m x =
---     let main = proxy x
---         path = T.unpack main
---         num  = maybe 0 id (DD.lookup path m) + 1
---         key  = D.Key main num
---     in  (DD.insert path num m, (key, x))
--- 
--- 
--- addKeys :: [LexEntry] -> [(Key, LexEntry)]
--- addKeys = snd . mapAccumL addKey DD.empty
-
-
 getKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, Key)
 getKey m x =
     let main = proxy x
@@ -318,10 +305,6 @@ save path xs = do
         error $ "save: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
---     formMap' <- D.fromList . concat <$>
---         mapIO'Lazy (saveBin lexPath) (addKeys xs)
---     encodeFile (path </> formMapFile) formMap'
---     return $ HistPL path formMap'
     formMap' <- D.fromList . concat <$>
         mapIO'Lazy (saveBin lexPath) (zip3 keys entries forms)
     encodeFile (path </> formMapFile) formMap'
