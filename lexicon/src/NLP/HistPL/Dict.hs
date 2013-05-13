@@ -99,6 +99,9 @@ data Val a w b = Val {
     -- | Additional information assigned to the entry.
       info  :: a
     -- | A map of forms with additional info of type @b@ assigned.
+    -- Invariant: in case of a reverse dictionary (from word forms
+    -- to base forms) this map should contain exactly one element
+    -- (a base form and a corresonding info).
     , forms :: M.Map w b }
     deriving (Show, Eq, Ord)
 

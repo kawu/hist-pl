@@ -44,10 +44,10 @@ source-repository head
     type: git
     location: https://github.com/kawu/hist-pl.git
 
-executable hist-pl-binarize
-  hs-source-dirs: src, tools
-  main-is: hist-pl-binarize.hs
-
-executable hist-pl-show
-  hs-source-dirs: src, tools
-  main-is: hist-pl-show.hs
+-- executable hist-pl-binarize
+--   hs-source-dirs: src, tools
+--   main-is: hist-pl-binarize.hs
+-- 
+-- executable hist-pl-show
+--   hs-source-dirs: src, tools
+--   main-is: hist-pl-show.hs

@@ -44,6 +44,7 @@ module NLP.HistPL
 (
 -- * Dictionary
   HistPL
+, Code (..)
 -- ** Key
 , Key
 , UID
@@ -79,7 +80,8 @@ import System.FilePath ((</>))
 import System.Directory ( getDirectoryContents, createDirectoryIfMissing
                         , createDirectory, doesDirectoryExist )
 import Data.List (mapAccumL)
-import Data.Binary (encodeFile, decodeFile)
+import Data.Binary (Binary, put, get, encodeFile, decodeFile)
+import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.DAWG.Dynamic as DD
@@ -107,15 +109,6 @@ formMapFile = "forms.bin"
 
 -- | A dictionary key which uniquely identifies the lexical entry.
 type Key = D.Key UID
-
-
--- -- | A dictionary key which uniquely identifies the lexical entry.
--- data Key = Key {
---     -- | First form (presumably lemma) of the lexical entry.
---       keyForm   :: T.Text
---     -- | Unique identifier among lexical entries with the same 'keyForm'.
---     , keyUid    :: UID }
---     deriving (Show, Eq, Ord)
 
 
 -- | A unique identifier among entries with the same `keyForm`.
@@ -159,17 +152,30 @@ saveEntry :: FilePath -> Key -> LexEntry -> IO ()
 saveEntry path x y = encodeFile (path </> showKey x) y
 
 
-addKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, (Key, LexEntry))
-addKey m x =
+-- addKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, (Key, LexEntry))
+-- addKey m x =
+--     let main = proxy x
+--         path = T.unpack main
+--         num  = maybe 0 id (DD.lookup path m) + 1
+--         key  = D.Key main num
+--     in  (DD.insert path num m, (key, x))
+-- 
+-- 
+-- addKeys :: [LexEntry] -> [(Key, LexEntry)]
+-- addKeys = snd . mapAccumL addKey DD.empty
+
+
+getKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, Key)
+getKey m x =
     let main = proxy x
         path = T.unpack main
         num  = maybe 0 id (DD.lookup path m) + 1
         key  = D.Key main num
-    in  (DD.insert path num m, (key, x))
+    in  (DD.insert path num m, key)
 
 
-addKeys :: [LexEntry] -> [(Key, LexEntry)]
-addKeys = snd . mapAccumL addKey DD.empty
+getKeys :: [LexEntry] -> [Key]
+getKeys = snd . mapAccumL getKey DD.empty
 
 
 mapIO'Lazy :: (a -> IO b) -> [a] -> IO [b]
@@ -218,8 +224,27 @@ data HistPL = HistPL {
     -- | A path to the binary dictionary.
       dictPath  :: FilePath
     -- | A dictionary with lexicon forms.
-    , formMap   :: D.Dict UID () ()
+    , formMap   :: D.Dict UID () Code
     }
+
+
+-- | Code of word form origin.
+data Code
+    = Orig  -- ^ original: present in lexical entry
+    | Copy  -- ^ copy: from corresponding entry in another dictionary
+    | Both  -- ^ both: historical and another dictionary
+    deriving (Show, Eq, Ord)
+
+
+instance Binary Code where
+    put Orig = put '1'
+    put Copy = put '2'
+    put Both = put '3'
+    get = get >>= \x -> return $ case x of
+        '1' -> Orig
+        '2' -> Copy
+        '3' -> Both
+        c   -> error $ "get: invalid Code value '" ++ [c] ++ "'"
 
 
 -- | Path to directory with entries.
@@ -265,13 +290,16 @@ withKey hpl key = tryWithKey hpl key >>= maybe
 
 
 -- | Lookup the form in the dictionary.
--- TODO: Apply word to the map in the result.
-lookup :: HistPL -> T.Text -> IO [LexEntry]
+lookup :: HistPL -> T.Text -> IO [(Code, LexEntry)]
 lookup hpl x = do
     let lexSet = D.lookup x (formMap hpl)
     sequence
-        [ withKey hpl key
-        | key <- M.keys lexSet ]
+        [ (getCode val,) <$> withKey hpl key
+        | (key, val) <- M.assocs lexSet ]
+  where
+    getCode m = case M.toList (D.forms m) of
+        [(_base, code)] -> code
+        _               -> error "lookup: expected one element in the map"
 
 
 --------------------------------------------------------
@@ -280,8 +308,9 @@ lookup hpl x = do
 
 
 -- | Construct dictionary from a list of lexical entries and save it in
--- the given directory. 
-save :: FilePath -> [LexEntry] -> IO (HistPL)
+-- the given directory.  To each entry an additional set of forms can
+-- be assigned.  
+save :: FilePath -> [(LexEntry, S.Set T.Text)] -> IO (HistPL)
 save path xs = do
     createDirectoryIfMissing True path
     isEmpty <- emptyDirectory path
@@ -289,17 +318,26 @@ save path xs = do
         error $ "save: directory " ++ path ++ " is not empty"
     let lexPath = path </> entryDir
     createDirectory lexPath
+--     formMap' <- D.fromList . concat <$>
+--         mapIO'Lazy (saveBin lexPath) (addKeys xs)
+--     encodeFile (path </> formMapFile) formMap'
+--     return $ HistPL path formMap'
     formMap' <- D.fromList . concat <$>
-        mapIO'Lazy (saveBin lexPath) (addKeys xs)
+        mapIO'Lazy (saveBin lexPath) (zip3 keys entries forms)
     encodeFile (path </> formMapFile) formMap'
     return $ HistPL path formMap'
   where
-    saveBin lexPath (key, lexEntry) = do
+    (entries, forms) = unzip xs
+    keys = getKeys entries
+    saveBin lexPath (key, lexEntry, otherForms) = do
         saveEntry lexPath key lexEntry
         let D.Key{..} = key
-        return
-            [ (orth, uid, (), y, ())
-            | y <- Util.allForms lexEntry ]
+            histForms = S.fromList (Util.allForms lexEntry)
+            onlyHist  = S.difference histForms otherForms
+            onlyOther = S.difference otherForms histForms
+            both      = S.intersection histForms otherForms
+            list c s  = [(orth, uid, (), y, c) | y <- S.toList s]
+        return $ list Orig onlyHist ++ list Copy onlyOther ++ list Both both
 
 
 -- | Load all lexical entries in a lazy manner.
