@@ -9,6 +9,7 @@ import           Control.Monad (void, forM_, (<=<))
 import           System.Console.CmdArgs
 import qualified Data.Set as S
 import qualified Data.Map as M
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
@@ -18,6 +19,8 @@ import qualified NLP.HistPL.Dict as D
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Fusion as F
 import qualified NLP.HistPL.Analyse as A
+
+import qualified NLP.HistPL.Transliter.Impact as I
 
 import           Paths_hist_pl (version)
 import           Data.Version (showVersion)
@@ -41,7 +44,9 @@ data HistPL
   | Print
     { binPath       :: FilePath }
   | Analyse
-    { binPath       :: FilePath }
+    { binPath       :: FilePath
+    , transFlag     :: Bool
+    , rmHypFlag     :: Bool }
   deriving (Data, Typeable, Show)
 
 
@@ -59,7 +64,13 @@ printMode = Print
 
 anaMode :: HistPL
 anaMode = Analyse
-    { binPath = def &= typ "HistPL-Binary" &= argPos 0 }
+    { binPath = def &= typ "HistPL-Binary" &= argPos 0
+    , transFlag = False &= (help . unwords)
+        [ "Perform pre-transliteration using the set of rules prepared for"
+        , "IMPACT documents." ]
+    , rmHypFlag = False &= (help . unwords)
+        [ "Remove all instances of the \"-\\n\" string."
+        , "Useful with IMPACT documents." ] }
 
 
 argModes :: Mode (CmdArgs HistPL)
@@ -104,7 +115,14 @@ exec Print{..} = do
 
 exec Analyse{..} = do
     hpl <- H.open binPath
-    xs  <- L.lines <$> L.getContents 
+    xs  <- L.lines . rmHyp <$> L.getContents 
     forM_ xs $ L.putStrLn <=< onLine hpl
   where
-    onLine hpl x = A.showAna <$> A.anaText hpl (L.toStrict x)
+    rmHyp | rmHypFlag = A.rmHyphen
+          | otherwise = id
+    onLine hpl
+        = fmap A.showAna
+        . A.mapL (A.anaWord hpl . trans)
+        . A.tokenize . L.toStrict
+    trans | transFlag = T.pack . I.transliter I.impactRules . T.unpack
+          | otherwise = id

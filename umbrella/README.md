@@ -30,6 +30,16 @@ To install the latest development version from github just run
 
 from the `umbrella` repository directory.
 
+Morfeusz
+--------
+
+Before you use the library, make sure that `Morfeusz` is available.
+Otherwise, you will get an error:
+
+    hist-pl: error while loading shared libraries: libmorfeusz.so.0
+
+Morfeusz bindings' library is a dependency of the `hist-pl` package, so
+it should be already installed when you try to use the tool.
 
 Usage
 =====

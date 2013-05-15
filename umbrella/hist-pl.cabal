@@ -1,5 +1,5 @@
 name:               hist-pl
-version:            0.1.0
+version:            0.2.0
 synopsis:           Umbrella package for the historical dictionary of Polish
 description:
     The package provides a tool for creating and searching the
@@ -21,6 +21,7 @@ library
   build-depends:      base >= 4 && < 5 
                     , text
                     , hist-pl-lexicon >= 0.4 && < 0.5
+                    , hist-pl-transliter >= 0.1 && < 0.2
                     , morfeusz >= 0.4 && < 0.5
 
 executable hist-pl

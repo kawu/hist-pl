@@ -7,12 +7,16 @@
 
 
 module NLP.HistPL.Analyse
-( Token (..)
+(
+-- * Tokenization
+  Token (..)
 , Other (..)
 , tokenize
-, anaText
+, rmHyphen
+-- * Analysis
 , anaWord
 , mapL
+-- * Printing
 , showAna
 ) where
 
@@ -53,8 +57,13 @@ data Other
     deriving (Show)
 
 
+-- | Remove all instances of the \"-\\n\" string.
+rmHyphen :: L.Text -> L.Text
+rmHyphen = L.concat . L.splitOn "-\n"
+
+
 -- | Perform simple tokenization -- spaces and punctuation
--- are treated as token ending markers.
+-- characters are treated as token ending markers.
 tokenize :: T.Text -> [Either T.Text Other]
 tokenize =
     map mkElem . T.groupBy cmp
@@ -69,12 +78,12 @@ tokenize =
         | otherwise                 = Left x
 
 
--- | Analyse the text.
-anaText :: H.HistPL -> T.Text -> IO [Either Token Other]
-anaText hpl = mapL (anaWord hpl) . tokenize
-
-
--- | Map the monadic function over left elements.
+-- -- | Analyse the text.
+-- anaText :: H.HistPL -> T.Text -> IO [Either Token Other]
+-- anaText hpl = mapL (anaWord hpl) . tokenize
+ 
+ 
+-- | Map the monadic function over the left elements of the input list.
 mapL :: (Functor m, Monad m) => (a -> m a') -> [Either a b] -> m [Either a' b]
 mapL f =
     let g (Left x)  = Left <$> f x
