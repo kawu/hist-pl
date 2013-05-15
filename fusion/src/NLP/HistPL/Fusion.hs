@@ -40,8 +40,8 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.PoliMorf as P
 
-import           NLP.HistPL (UID)
-import qualified NLP.HistPL as H
+import           NLP.HistPL.Lexicon (UID)
+import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Util as H
 import           NLP.HistPL.Dict
 
