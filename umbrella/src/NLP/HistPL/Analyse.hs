@@ -2,7 +2,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 
--- | The module provides dictionary-driven analysis of the input text.
+-- | The module provides functions for dictionary-driven analysis
+-- of the input text.
 
 
 module NLP.HistPL.Analyse
