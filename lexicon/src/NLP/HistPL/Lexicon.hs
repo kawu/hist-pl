@@ -12,7 +12,7 @@
     It is intended to be imported qualified, to avoid name
     clashes with Prelude functions, e.g. 
 
-    > import qualified NLP.HistPL as H
+    > import qualified NLP.HistPL.Lexicon as H
    
     Use `save` and `load` functions to save/load
     the entire dictionary in/from a given directory.  They are
@@ -40,7 +40,7 @@
 -}
 
 
-module NLP.HistPL
+module NLP.HistPL.Lexicon
 (
 -- * Dictionary
   HistPL

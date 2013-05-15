@@ -25,7 +25,7 @@ library
                     , NLP.HistPL.LMF.Show
                     , NLP.HistPL.Util
                     , NLP.HistPL.Dict
-                    , NLP.HistPL
+                    , NLP.HistPL.Lexicon
   build-depends:      base >= 4 && < 5 
                     , containers
                     , directory
