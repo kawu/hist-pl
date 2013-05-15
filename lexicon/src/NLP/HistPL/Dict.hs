@@ -101,7 +101,7 @@ data Val a w b = Val {
     -- | A map of forms with additional info of type @b@ assigned.
     -- Invariant: in case of a reverse dictionary (from word forms
     -- to base forms) this map should contain exactly one element
-    -- (a base form and a corresonding info).
+    -- (a base form and a corresonding information).
     , forms :: M.Map w b }
     deriving (Show, Eq, Ord)
 
@@ -144,9 +144,6 @@ mapW :: Ord w' => (w -> w') -> Val a w b -> Val a w' b
 mapW f v =
     let g = M.fromList . map (first f) . M.toList
     in  v { forms = g (forms v) }
-
-
--- | Encode dictionary value given `path`.
 
 
 -- | Decode dictionary value given `path`.
