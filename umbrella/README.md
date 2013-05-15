@@ -70,10 +70,10 @@ Be aware, that conversion from LMF to the binary format is lossy at the moment.
 Printing
 --------
 
-To convert the binary dictionary into the LMF format use the `show` mode
+To convert the binary dictionary into the LMF format use the `print` mode
 of the command line tool:
 
-    hist-pl show srpsdp.bin > srpsdp-prim.xml
+    hist-pl print srpsdp.bin > srpsdp-prim.xml
 
 Labeling
 --------
