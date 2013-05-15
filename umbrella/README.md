@@ -101,13 +101,14 @@ Library
 
 The [hist-pl-lexicon][hist-pl-lexicon] library, installed as a dependency
 of the `hist-pl` wrapper package, provides a simple interface for accessing
-the contents of the binary dictionary.  See the [NLP.HistPL][hist-pl-module]
-module for an example of the library usage and a detailed API description.
+the contents of the binary dictionary.  See the
+[NLP.HistPL.Lexicon][hist-pl-module] module for an example of the library
+usage and a detailed API description.
 
 
 [hackage-repo]: http://hackage.haskell.org/package/hist-pl "hist-pl Hackage repository"
 [hist-pl-lexicon]: https://github.com/kawu/hist-pl/tree/master/lexicon#hist-pl-lexicon  "hist-pl-lexicon library"
-[hist-pl-module]: http://hackage.haskell.org/packages/archive/hist-pl/latest/doc/html/NLP-HistPL.html "NLP.HistPL"
+[hist-pl-module]: http://hackage.haskell.org/packages/archive/hist-pl-lexicon/latest/doc/html/NLP-HistPL-Lexicon.html "NLP.HistPL.Lexicon"
 [ghc]: http://www.haskell.org/ghc "Glasgow Haskell Compiler"
 [ghci]: http://www.haskell.org/ghc/docs/latest/html/users_guide/ghci.html "GHCi"
 [cabal]: http://www.haskell.org/cabal "Cabal"
