@@ -26,7 +26,6 @@ import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
 
 import qualified NLP.HistPL as H
-import qualified NLP.HistPL as H
 import qualified NLP.HistPL.Fusion as F
 
 import qualified NLP.Morfeusz as R
