@@ -53,6 +53,7 @@ module NLP.HistPL.Lexicon
 , open
 -- ** Query
 , lookup
+, lookupMany
 , getIndex
 , tryWithKey
 , withKey
@@ -217,9 +218,9 @@ data HistPL = HistPL {
 
 -- | Code of word form origin.
 data Code
-    = Orig  -- ^ original: present in lexical entry
-    | Copy  -- ^ copy: from corresponding entry in another dictionary
-    | Both  -- ^ both: historical and another dictionary
+    = Orig  -- ^ only from historical dictionary
+    | Both  -- ^ from both historical and another dictionary
+    | Copy  -- ^ only from another dictionary
     deriving (Show, Eq, Ord)
 
 
@@ -277,15 +278,30 @@ withKey hpl key = tryWithKey hpl key >>= maybe
 
 
 -- | Lookup the form in the dictionary.
-lookup :: HistPL -> T.Text -> IO [(Code, LexEntry)]
+lookup :: HistPL -> T.Text -> IO [(LexEntry, Code)]
 lookup hpl x = do
     let lexSet = D.lookup x (formMap hpl)
     sequence
-        [ (code, ) <$> withKey hpl key
-        | (code, key) <- getCode =<< M.assocs lexSet ]
+        [ (   , code) <$> withKey hpl key
+        | (key, code) <- getCode =<< M.assocs lexSet ]
   where
     getCode (key, val) =
-        [ (code, key { D.path = base })
+        [ (key { D.path = base }, code)
+        | (base, code) <- M.toList (D.forms val) ]
+        
+
+-- | Lookup a set of forms in the dictionary.
+lookupMany :: HistPL -> [T.Text] -> IO [(LexEntry, Code)]
+lookupMany hpl xs = do
+    let keyMap = M.fromListWith min $
+            getCode =<< M.assocs =<<
+            (flip D.lookup (formMap hpl) <$> xs)
+    sequence
+        [ (   , code) <$> withKey hpl key
+        | (key, code) <- M.toList keyMap ]
+  where
+    getCode (key, val) =
+        [ (key { D.path = base }, code)
         | (base, code) <- M.toList (D.forms val) ]
 
 
