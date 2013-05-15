@@ -102,7 +102,7 @@ parseWord rules x =
     Left err -> error $ "parseWord: " ++ show err
     Right y  -> y
 
--- | Transliterate the string with the given set of transliteration rules.
+-- | Transliterate the word with the given set of transliteration rules.
 transliter :: TrRules -> String -> String
 transliter rules x =
   case takeWhile (not . eq) ps of

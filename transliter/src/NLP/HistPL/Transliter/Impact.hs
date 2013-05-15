@@ -1,20 +1,29 @@
+-- | A set of transliteration rules prepared for documents from the
+-- IMPACT project.
+--
+-- >>> import NLP.HistPL.Transliter.Impact
+-- >>> putStrLn $ transliter impactRules "angol"
+-- "anjoł"
+
+
 module NLP.HistPL.Transliter.Impact
-( rules
+( impactRules
+, module NLP.HistPL.Transliter 
 ) where
 
 import Control.Applicative ((<$>), (<*))
 import Text.Parsec hiding (Line)
 
-import NLP.HistPL.Transliter hiding (wordRules, charRules)
+import NLP.HistPL.Transliter
 
 -- | A set of transliteration rules prepared for documents
 -- from the IMPACT project. 
-rules :: TrRules
-rules = TrRules wordRules charRules
+impactRules :: TrRules
+impactRules = TrRules impactWordRules impactCharRules
 
 -- Word-level transliteration rules 
-wordRules :: [Parser String]
-wordRules = 
+impactWordRules :: [Parser String]
+impactWordRules = 
     [ "y" #> "i"
     , "ztąd" #> "stąd"
     , "i" #> "j" >+> vowel >+> many1 anyChar
@@ -26,8 +35,8 @@ wordRules =
         >+> many anyChar ]
 
 -- Character-level transliteration rules 
-charRules :: [Parser String]
-charRules =
+impactCharRules :: [Parser String]
+impactCharRules =
     [ "à" .|  "á" .|. "á" .|. "â" .|. "ã" .|. "ä" .|. "ȧ" >#> "a"
     , "è" .|  "é" .|. "ê" .|. "ë" .|. "ē" .|. "ĕ"
           .|. "ė" .|. "ẽ" .|. "ə" >#> "e"
