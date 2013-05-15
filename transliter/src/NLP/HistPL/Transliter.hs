@@ -55,12 +55,12 @@ applyShape Lower xs = map toLower xs
 applyShape Upper xs = map toUpper xs
 applyShape Capitalized (x:xs) = toUpper x : map toLower xs
 
--- | A transliteration rule, e.g. ("abc" #> "bcd") will
--- substitute all "abc" (sub)string instances with "bcd".
+-- | A transliteration rule, e.g. (\"abc\" #> \"bcd\") will
+-- substitute all \"abc\" (sub)string instances with \"bcd\".
 (#>) :: String -> String -> Parser String
 (#>) p x = ciString p >#> x
 
--- | Similar to `(#>)`, but this function allows to define a custom
+-- | Similar to `#>`, but this function allows to define a custom
 -- parser for the string which should be substituted with another
 -- string.
 (>#>) :: Parser String -> String -> Parser String
@@ -76,7 +76,7 @@ applyShape Capitalized (x:xs) = toUpper x : map toLower xs
 (.|) x y = try (ciString x) <|> try (ciString y)
 -- FIXME: Gdy długość napisu jest <= 1, nie jest potrzebna funkcja try.
 
--- | Similar to `(.|)`, but accepts a parser as the first argument.
+-- | Similar to `.|`, but accepts a parser as the first argument.
 (.|.) :: Parser String -> String -> Parser String
 (.|.) p y = p <|> try (ciString y)
 -- FIXME: Gdy długość napisu jest <= 1, nie jest potrzebna funkcja try.
