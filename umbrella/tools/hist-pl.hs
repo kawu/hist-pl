@@ -13,7 +13,7 @@ import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
 import qualified Data.PoliMorf as P
-import           NLP.HistPL.LMF (readLMF)
+import qualified NLP.HistPL.LMF as LMF
 import qualified NLP.HistPL.Dict as D
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Fusion as F
@@ -38,6 +38,8 @@ data HistPL
     { lmfPath       :: FilePath
     , poliPath      :: FilePath
     , outPath       :: FilePath }
+  | Print
+    { binPath       :: FilePath }
   | Analyse
     { binPath       :: FilePath }
   deriving (Data, Typeable, Show)
@@ -50,6 +52,11 @@ createMode = Create
     , outPath  = def &= typ "HistPL-Binary" &= argPos 2 }
 
 
+printMode :: HistPL
+printMode = Print
+    { binPath = def &= typ "HistPL-Binary" &= argPos 0 }
+
+
 anaMode :: HistPL
 anaMode = Analyse
     { binPath = def &= typ "HistPL-Binary" &= argPos 0 }
@@ -57,7 +64,7 @@ anaMode = Analyse
 
 argModes :: Mode (CmdArgs HistPL)
 argModes = cmdArgsMode $ modes
-    [createMode, anaMode]
+    [createMode, printMode, anaMode]
     &= summary concraftDesc
     &= program "hist-pl"
 
@@ -76,7 +83,7 @@ exec Create{..} = do
     -- putStrLn "Reading PoliMorf..."
     poli <- F.mkPoli . filter P.atomic <$> P.readPoliMorf poliPath
     -- putStrLn "Reading historical dictionary of Polish..."
-    hist <- readLMF lmfPath
+    hist <- LMF.readLMF lmfPath
     -- putStrLn "Creating the binary version of the dictionary..."
     void $ H.save outPath (addForms poli hist)
   where
@@ -88,6 +95,11 @@ exec Create{..} = do
     formSet lexSet = S.fromList $ concat
         [ M.keys (D.forms val)
         | val <- M.elems lexSet ]
+
+
+exec Print{..} = do
+    hpl <- H.open binPath
+    H.load hpl >>= L.putStr . LMF.showLMF . map snd
 
 
 exec Analyse{..} = do

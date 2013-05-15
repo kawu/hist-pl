@@ -82,7 +82,7 @@ Run `hist-pl analyse --help` to learn more about the program arguments and
 possible labeling options.
 
 At this moment, the `analyse` mode is provided for presentation purposes.
-If you would like to make use of the labeling results, you should use the
+If you would like to make use of labeling results, you should use the
 library API (see next section) and process the results on the application
 level, depending on your goals.
 
