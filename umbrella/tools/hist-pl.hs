@@ -5,16 +5,19 @@
 
 
 import           Control.Applicative ((<$>))
-import           Control.Monad (void)
+import           Control.Monad (void, forM_, (<=<))
 import           System.Console.CmdArgs
 import qualified Data.Set as S
 import qualified Data.Map as M
+import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy.IO as L
 
 import qualified Data.PoliMorf as P
 import           NLP.HistPL.LMF (readLMF)
 import qualified NLP.HistPL.Dict as D
-import qualified NLP.HistPL as H
+import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Fusion as F
+import qualified NLP.HistPL.Analyse as A
 
 import           Paths_hist_pl (version)
 import           Data.Version (showVersion)
@@ -35,8 +38,9 @@ data HistPL
     { lmfPath       :: FilePath
     , poliPath      :: FilePath
     , outPath       :: FilePath }
+  | Analyse
+    { binPath       :: FilePath }
   deriving (Data, Typeable, Show)
-
 
 
 createMode :: HistPL
@@ -46,9 +50,14 @@ createMode = Create
     , outPath  = def &= typ "HistPL-Binary" &= argPos 2 }
 
 
+anaMode :: HistPL
+anaMode = Analyse
+    { binPath = def &= typ "HistPL-Binary" &= argPos 0 }
+
+
 argModes :: Mode (CmdArgs HistPL)
 argModes = cmdArgsMode $ modes
-    [createMode]
+    [createMode, anaMode]
     &= summary concraftDesc
     &= program "hist-pl"
 
@@ -79,3 +88,11 @@ exec Create{..} = do
     formSet lexSet = S.fromList $ concat
         [ M.keys (D.forms val)
         | val <- M.elems lexSet ]
+
+
+exec Analyse{..} = do
+    hpl <- H.open binPath
+    xs  <- L.lines <$> L.getContents 
+    forM_ xs $ L.putStrLn <=< onLine hpl
+  where
+    onLine hpl x = A.showAna <$> A.anaText hpl (L.toStrict x)
