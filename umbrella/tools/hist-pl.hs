@@ -12,6 +12,9 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
+import qualified Data.ByteString.Lazy.Char8 as BC
+import qualified Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.Aeson as Aeson
 
 import qualified Data.PoliMorf as P
 import qualified NLP.HistPL.LMF as LMF
@@ -31,9 +34,9 @@ import           Data.Version (showVersion)
 ---------------------------------------
 
 
--- | A description of the Concraft-pl tool
-concraftDesc :: String
-concraftDesc = "HistPL " ++ showVersion version
+-- | A description of the hist-pl tool
+histDesc :: String
+histDesc = "HistPL " ++ showVersion version
 
 
 data HistPL
@@ -46,7 +49,9 @@ data HistPL
   | Analyse
     { binPath       :: FilePath
     , transFlag     :: Bool
-    , rmHypFlag     :: Bool }
+    , rmHypFlag     :: Bool
+    , compact       :: Bool
+    , printCont     :: Int }
   deriving (Data, Typeable, Show)
 
 
@@ -70,13 +75,17 @@ anaMode = Analyse
         , "IMPACT documents." ]
     , rmHypFlag = False &= (help . unwords)
         [ "Remove all instances of the \"-\\n\" string."
-        , "Useful with IMPACT documents." ] }
+        , "Useful with IMPACT documents." ]
+    , compact = False &= help "Compact JSON output"
+    , printCont = 1 &= (help . unwords)
+        [ "Printing contemporary interpretations:"
+        , "0 -- never, 1 -- when no hist (default), 2 -- always" ] }
 
 
 argModes :: Mode (CmdArgs HistPL)
 argModes = cmdArgsMode $ modes
     [createMode, printMode, anaMode]
-    &= summary concraftDesc
+    &= summary histDesc
     &= program "hist-pl"
 
 
@@ -116,13 +125,20 @@ exec Print{..} = do
 exec Analyse{..} = do
     hpl <- H.open binPath
     xs  <- L.lines . rmHyp <$> L.getContents 
-    forM_ xs $ L.putStrLn <=< onLine hpl
+    forM_ xs $ BC.putStrLn <=< onLine hpl
   where
     rmHyp | rmHypFlag = A.rmHyphen
           | otherwise = id
     onLine hpl
-        = fmap A.showAna
+        = fmap (encode . A.jsonAna A.defaultJConf)
         . A.mapL (A.anaWord hpl . trans)
         . A.tokenize . L.toStrict
-    trans | transFlag = T.pack . I.transliter I.impactRules . T.unpack
-          | otherwise = id
+    trans   | transFlag = T.pack . I.transliter I.impactRules . T.unpack
+            | otherwise = id
+    encode  | compact   = Aeson.encode
+            | otherwise = Aeson.encodePretty
+    jsonConf = A.defaultJConf
+        { A.showCont = case printCont of
+            0   -> A.NoShowCont
+            2   -> A.ForceShowCont
+            _   -> A.ShowCont }
