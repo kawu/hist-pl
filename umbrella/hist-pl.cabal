@@ -34,7 +34,6 @@ executable hist-pl
                     , cmdargs
                     , bytestring
                     , aeson-pretty >= 0.7 && < 0.8
-                    -- , aeson >= 0.6 && < 0.7
                     , polimorf >= 0.7.1 && < 0.8
                     , hist-pl-lexicon >= 0.4 && < 0.5
                     , hist-pl-fusion >= 0.4 && < 0.5
