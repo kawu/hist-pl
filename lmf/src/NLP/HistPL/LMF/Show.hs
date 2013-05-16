@@ -67,7 +67,7 @@ buildLexEntry :: LexEntry -> [L.Builder]
 buildLexEntry lx =
     buildElem beg body end
   where
-    beg = "<LexicalEntry id=\"" <> L.fromText (lexId lx) <> "\">"
+    beg = "<LexicalEntry id=\"" <> L.fromText (lexID lx) <> "\">"
     end = "</LexicalEntry>"
     body
         =  map (buildFeat "lineRef") (maybeToList $ lineRef lx)

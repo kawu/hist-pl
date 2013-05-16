@@ -117,7 +117,7 @@ instance Binary Sense where
 -- | A description of a lexeme.
 data LexEntry = LexEntry {
     -- | An ID of the lexical entry.
-      lexId         :: T.Text
+      lexID         :: T.Text
     -- | A line reference number.  Provisional field.
     , lineRef       :: Maybe T.Text
     -- | A status of the lexeme.  Provisional field.
@@ -141,7 +141,7 @@ data LexEntry = LexEntry {
 
 instance Binary LexEntry where
     put LexEntry{..} = do
-        put lexId
+        put lexID
         put lineRef
         put status
         put pos

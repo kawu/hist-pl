@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-} 
-{-# LANGUAGE ScopedTypeVariables #-} 
 {-# LANGUAGE RecordWildCards #-} 
 {-# LANGUAGE OverloadedStrings #-} 
 {-# LANGUAGE TupleSections #-} 
@@ -87,6 +86,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.DAWG.Dynamic as DD
 
+import qualified NLP.HistPL.Binary as B
 import qualified NLP.HistPL.Dict as D
 import           NLP.HistPL.Types
 import qualified NLP.HistPL.Util as Util
@@ -136,18 +136,6 @@ parseKey x =
     in  D.Key (T.pack form'S) (read uid'S)
 
 
--- | Load the directory contents.
-loadContents :: FilePath -> IO [FilePath]
-loadContents path = do
-    xs <- getDirectoryContents path
-    return [x | x <- xs, x /= ".", x /= ".."]
-
-
--- | Check if the directory is empty.
-emptyDirectory :: FilePath -> IO Bool
-emptyDirectory path = null <$> loadContents path
-
-
 -- | Save entry on a disk under the given key.
 saveEntry :: FilePath -> Key -> LexEntry -> IO ()
 saveEntry path x y = encodeFile (path </> showKey x) y
@@ -164,34 +152,6 @@ getKey m x =
 
 getKeys :: [LexEntry] -> [Key]
 getKeys = snd . mapAccumL getKey DD.empty
-
-
-mapIO'Lazy :: (a -> IO b) -> [a] -> IO [b]
-mapIO'Lazy f (x:xs) = (:) <$> f x <*> unsafeInterleaveIO (mapIO'Lazy f xs)
-mapIO'Lazy _ []     = return []
-
-
-forIO'Lazy :: [a] -> (a -> IO b) -> IO [b]
-forIO'Lazy = flip mapIO'Lazy
-
-
-maybeErr :: MonadIO m => IO a -> m (Maybe a)
-maybeErr io = do
-    r <- liftIO (try io)
-    case r of
-        Left (_e :: SomeException)  -> return Nothing
-        Right x                     -> return (Just x)
-
-
-maybeT :: Monad m => Maybe a -> MaybeT m a
-maybeT = MaybeT . return
-{-# INLINE maybeT #-}
-
-
-maybeErrT :: MonadIO m => IO a -> MaybeT m a
-maybeErrT io = do
-    r <- liftIO (maybeErr io)
-    maybeT r
 
 
 -- | Load lexical entry from disk by its key.

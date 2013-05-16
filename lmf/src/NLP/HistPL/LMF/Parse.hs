@@ -27,11 +27,11 @@ lmfP = true //> lexEntryP
 
 lexEntryP :: Parser LexEntry
 lexEntryP = tag "LexicalEntry" *> getAttr "id" >^>
-  \lexId' -> collTags >>=
+  \lexID' -> collTags >>=
   \tags   -> return $
     let with p = tagsParseXml (findAll p) tags
     in  LexEntry
-        { lexId         = L.toStrict lexId'
+        { lexID         = L.toStrict lexID'
         , lineRef       = listToMaybe $ with lineRefP
         , status        = listToMaybe $ with statusP
         , pos           = with posP
