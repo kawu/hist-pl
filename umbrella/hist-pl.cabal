@@ -1,5 +1,5 @@
 name:               hist-pl
-version:            0.3.0
+version:            0.2.0
 synopsis:           Umbrella package for the historical dictionary of Polish
 description:
     The package provides a tool for creating and searching the
