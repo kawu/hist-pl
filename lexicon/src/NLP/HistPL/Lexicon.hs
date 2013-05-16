@@ -87,7 +87,7 @@ import qualified Data.Text as T
 import qualified Data.DAWG.Dynamic as DD
 
 import qualified NLP.HistPL.Binary as B
-import qualified NLP.HistPL.Dict as D
+import qualified NLP.HistPL.DAWG as D
 import           NLP.HistPL.Types
 import qualified NLP.HistPL.Util as Util
 
@@ -172,7 +172,7 @@ data HistPL = HistPL {
     -- | A path to the binary dictionary.
       dictPath  :: FilePath
     -- | A dictionary with lexicon forms.
-    , formMap   :: D.Dict UID () Code
+    , formMap   :: D.DAWG UID () Code
     }
 
 

@@ -21,6 +21,7 @@ import qualified Data.Text as T
 import qualified Control.Monad.LazyIO as LazyIO
 
 import           NLP.HistPL.Types
+import           NLP.HistPL.Binary.Util
 
 
 -- | Save entry in the given directory (the actual entry path
