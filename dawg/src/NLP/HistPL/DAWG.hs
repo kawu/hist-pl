@@ -2,18 +2,19 @@
 {-# LANGUAGE TupleSections #-}
 
 
--- | A `D.DAWG`-based dictionary.
+-- | A `D.DAWG`-based dictionary with additional information
+-- assigned to lexical entries and word forms.
 
 
-module NLP.HistPL.Dict
+module NLP.HistPL.DAWG
 (
 -- * Rule
   Rule (..)
 , apply
 , between
 
--- * Dictionary
-, Dict
+-- * DAWG
+, DAWG
 -- ** Entry
 , Lex (..)
 , Key (..)
@@ -31,15 +32,15 @@ module NLP.HistPL.Dict
 , fromList
 , toList
 , entries
-, revDict
+, revDAWG
 ) where
 
 
-import Prelude hiding (lookup)
-import Control.Applicative ((<$>), (<*>))
-import Control.Arrow (first)
-import Data.Binary (Binary, get, put)
-import Data.Text.Binary ()
+import           Prelude hiding (lookup)
+import           Control.Applicative ((<$>), (<*>))
+import           Control.Arrow (first)
+import           Data.Binary (Binary, get, put)
+import           Data.Text.Binary ()
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.DAWG.Static as D
@@ -165,25 +166,25 @@ toListE (Lex Key{..} Val{..}) =
 
 -- | A dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type Dict i a b = D.DAWG Char () (Node i a b)
+type DAWG i a b = D.DAWG Char () (Node i a b)
 
 
 -- | Lookup the key in the dictionary.
-lookup :: Ord i => T.Text -> Dict i a b -> LexSet i a b
+lookup :: Ord i => T.Text -> DAWG i a b -> LexSet i a b
 lookup x dict = decode x $ case D.lookup (T.unpack x) dict of
     Just m  -> m
     Nothing -> M.empty
 
 
 -- | List dictionary lexical entries.
-entries :: Ord i => Dict i a b -> [Lex i a b]
+entries :: Ord i => DAWG i a b -> [Lex i a b]
 entries = concatMap f . D.assocs where
     f (key, val) = unLexSet $ decode (T.pack key) val
 
 
 -- | Make dictionary from a list of (key, ID, entry info, form,
 -- entry\/form info) tuples.
-fromList :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> Dict i a b
+fromList :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> DAWG i a b
 fromList xs = D.fromListWith union $
     [ ( T.unpack x
       , M.singleton i (Val a (M.singleton (between x y) b)) )
@@ -195,12 +196,12 @@ fromList xs = D.fromListWith union $
 
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
 -- key\/ID\/elem info) tuples.
-toList :: (Ord i, Ord a, Ord b) => Dict i a b -> [(T.Text, i, a, T.Text, b)]
+toList :: (Ord i, Ord a, Ord b) => DAWG i a b -> [(T.Text, i, a, T.Text, b)]
 toList = concatMap toListE . entries
 
 
 -- | Reverse the dictionary.
-revDict :: (Ord i, Ord a, Ord b) => Dict i a b -> Dict i a b
-revDict = 
+revDAWG :: (Ord i, Ord a, Ord b) => DAWG i a b -> DAWG i a b
+revDAWG = 
     let swap (base, i, x, form, y) = (form, i, x, base, y)
     in  fromList . map swap . toList
