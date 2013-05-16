@@ -133,14 +133,18 @@ data ShowCont
 -- | JSON serialization configuration.  Depending on the configuration,
 -- different parts of the result will be converted to a JSON format.
 data JConf = JConf
-    { showCont :: ShowCont }
-    deriving (Show, Eq, Ord)
+    { showCont  :: ShowCont
+    -- ^ When to show cont. interpretations.
+    , showDefs  :: Bool
+    -- ^ Show definitions?
+    } deriving (Show, Eq, Ord)
 
 
 -- | Default JSON serialization configuration.
 defaultJConf :: JConf
 defaultJConf = JConf
-    { showCont = ShowCont }
+    { showCont  = ShowCont
+    , showDefs  = False }
 
 
 -- | Build JSON value from a list of analysed sentences.
@@ -175,16 +179,19 @@ jsonTok jc tok = object $
 
 -- | JSON represesentation of a historical interpretation.
 jsonHist :: JConf -> (H.LexEntry, H.Code) -> Value
-jsonHist jc (entry, code) = object
-    [ "id"    .= jsonID (H.lexId entry, code)
-    , "pos"   .= map toJSON (H.pos entry)
-    , "base"  .= map toJSON (H.text $ H.lemma entry) ]
+jsonHist jc (entry, code) = object $
+    [ "id"   .= jsonID (H.lexId entry, code)
+    , "pos"  .= H.pos entry
+    , "base" .= H.text (H.lemma entry) ]
+    ++ if showDefs jc then [defsElem] else []
   where
     jsonID (id', cd') = toJSON (toJSON id', jsonCode cd')
     jsonCode code' = toJSON $ case code' of
         H.Orig -> "orig" :: T.Text
         H.Both -> "both"
         H.Copy -> "copy"
+    defsElem = "defs" .= concatMap H.text (getDefs entry)
+    getDefs  = concatMap H.defs . H.senses
 
 
 -- | JSON represesentation of a contemporary interpretation.

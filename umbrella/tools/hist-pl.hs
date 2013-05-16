@@ -51,7 +51,8 @@ data HistPL
     , transFlag     :: Bool
     , rmHypFlag     :: Bool
     , compact       :: Bool
-    , printCont     :: Int }
+    , printCont     :: Int
+    , printDefs     :: Bool }
   deriving (Data, Typeable, Show)
 
 
@@ -79,7 +80,8 @@ anaMode = Analyse
     , compact = False &= help "Compact JSON output"
     , printCont = 1 &= (help . unwords)
         [ "Printing contemporary interpretations:"
-        , "0 -- never, 1 -- when no hist (default), 2 -- always" ] }
+        , "0 -- never, 1 -- when no hist (default), 2 -- always" ]
+    , printDefs = False &= help "Print definitions" }
 
 
 argModes :: Mode (CmdArgs HistPL)
@@ -130,7 +132,7 @@ exec Analyse{..} = do
     rmHyp | rmHypFlag = A.rmHyphen
           | otherwise = id
     onLine hpl
-        = fmap (encode . A.jsonAna A.defaultJConf)
+        = fmap (encode . A.jsonAna jsonConf)
         . A.mapL (A.anaWord hpl . trans)
         . A.tokenize . L.toStrict
     trans   | transFlag = T.pack . I.transliter I.impactRules . T.unpack
@@ -141,4 +143,5 @@ exec Analyse{..} = do
         { A.showCont = case printCont of
             0   -> A.NoShowCont
             2   -> A.ForceShowCont
-            _   -> A.ShowCont }
+            _   -> A.ShowCont
+        , A.showDefs = printDefs }
