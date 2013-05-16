@@ -80,8 +80,8 @@ anaMode = Analyse
     , compact = False &= help "Compact JSON output"
     , printCont = 1 &= (help . unwords)
         [ "Printing contemporary interpretations:"
-        , "0 -- never, 1 -- when no hist (default), 2 -- always" ]
-    , printDefs = False &= help "Print definitions" }
+        , "0 -- never, 1 -- when no hist (default), 2 -- always." ]
+    , printDefs = False &= help "Print definitions." }
 
 
 argModes :: Mode (CmdArgs HistPL)
