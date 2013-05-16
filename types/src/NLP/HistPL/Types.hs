@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 -- | A data type hierarchy provided by this module mirrors
--- the hierarchy of structures kept in the original, LMF
+-- the hierarchy of elements present in the original, LMF
 -- representation of the historical dictionary of Polish.
 
 module NLP.HistPL.Types
@@ -21,10 +21,10 @@ module NLP.HistPL.Types
 , LexEntry (..)
 ) where
 
-import Control.Applicative ((<$>), (<*>))
+import           Control.Applicative ((<$>), (<*>))
+import           Data.Binary (Binary, put, get)
 import qualified Data.Text as T
-import Data.Text.Binary ()
-import Data.Binary (Binary, put, get)
+import           Data.Text.Binary ()
 
 -- | Form or text representation.
 data Repr = Repr
