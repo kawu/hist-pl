@@ -7,15 +7,15 @@ module NLP.HistPL.LMF.Show
 , showLexEntry
 ) where
 
-import Data.Monoid (Monoid, mappend, mconcat)
-import Data.List (intersperse)
-import Data.Maybe (maybeToList)
+import           Data.Monoid (Monoid, mappend, mconcat)
+import           Data.List (intersperse)
+import           Data.Maybe (maybeToList)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Builder as L
-import Text.XML.PolySoup (escapeXml)
+import           Text.XML.PolySoup (escapeXml)
 
-import NLP.HistPL.Types
+import           NLP.HistPL.Types
 
 -- | An infix synonym for 'mappend'.
 {-# INLINE (<>) #-}

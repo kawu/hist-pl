@@ -8,17 +8,17 @@ module NLP.HistPL.LMF.Parse
 , parseLexEntry
 ) where
 
-import Control.Monad (join)
-import Data.Maybe (mapMaybe, listToMaybe)
+import           Control.Monad (join)
+import           Data.Maybe (mapMaybe, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 import qualified Text.XML.PolySoup as Soup
-import Text.XML.PolySoup hiding (XmlParser, Parser, join)
+import           Text.XML.PolySoup hiding (XmlParser, Parser, join)
 
-import NLP.HistPL.Types
+import           NLP.HistPL.Types
 
-import Debug.Trace (trace)
+import           Debug.Trace (trace)
 
 type Parser a = Soup.XmlParser L.Text a
 
