@@ -1,5 +1,5 @@
 name:               hist-pl-fusion
-version:            0.4.0
+version:            0.5.0
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
@@ -25,7 +25,8 @@ library
       , text-binary
       , dawg >= 0.9 && < 0.10
       , polimorf >= 0.7.1 && < 0.8
-      , hist-pl-lexicon >= 0.4 && < 0.5
+      , hist-pl-dawg >= 0.1 && < 0.2
+      , hist-pl-lexicon >= 0.5 && < 0.6
 
     exposed-modules:
         NLP.HistPL.Fusion
@@ -35,11 +36,3 @@ library
 source-repository head
     type: git
     location: https://github.com/kawu/hist-pl.git
-
--- executable hist-pl-fuse
---     build-depends:
---         binary
---       , cmdargs
---     hs-source-dirs: src, tools
---     main-is: hist-pl-fuse.hs
---     ghc-options: -Wall -O2

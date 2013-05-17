@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 
+
 module NLP.HistPL.Fusion
 (
 -- * Basic types
@@ -33,9 +34,10 @@ module NLP.HistPL.Fusion
 , sumChoice
 ) where
 
-import Prelude hiding (lookup)
-import Control.Applicative ((<$>), (<*>))
-import Data.Text.Binary ()
+
+import           Prelude hiding (lookup)
+import           Control.Applicative ((<$>), (<*>))
+import           Data.Text.Binary ()
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.PoliMorf as P
@@ -43,7 +45,7 @@ import qualified Data.PoliMorf as P
 import           NLP.HistPL.Lexicon (UID)
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Util as H
-import           NLP.HistPL.Dict
+import           NLP.HistPL.DAWG
 
 ------------------------------------------------------------------------
 
@@ -67,13 +69,13 @@ type IsBase = Bool
 -- | Dictionary keys represent base forms and rules transform base forms to
 -- their corresponding word forms.  Info @a@ is assigned to every lexeme
 -- and info @b@ to every word form.
-type BaseDict i a b = Dict i a b
+type BaseDAWG i a b = DAWG i a b
 
 
 -- | Dictionary keys represent word forms and rules transform word forms to
 -- their corresponding base forms.  Info @a@ is assigned to every lexeme
 -- and info @b@ to every word form.
-type FormDict i a b = Dict i a b
+type FormDAWG i a b = DAWG i a b
 
 
 ------------------------------------------------------------------------
@@ -81,8 +83,8 @@ type FormDict i a b = Dict i a b
 
 -- | Bilateral dictionary.
 data Bila i a b = Bila
-    { baseDict  :: BaseDict i a b
-    , formDict  :: FormDict i a b }
+    { baseDAWG  :: BaseDAWG i a b
+    , formDAWG  :: FormDAWG i a b }
     deriving (Show, Eq, Ord)
 
 
@@ -90,18 +92,18 @@ data Bila i a b = Bila
 -- lexeme info, word form, additional word form info) tuples.
 mkBila :: (Ord i, Ord a, Ord b) => [(Base, i, a, Word, b)] -> Bila i a b
 mkBila xs = Bila
-    { baseDict  = baseDict'
-    , formDict  = formDict' }
+    { baseDAWG  = baseDAWG'
+    , formDAWG  = formDAWG' }
   where
-    baseDict'   = fromList xs
-    formDict'   = revDict baseDict'
+    baseDAWG'   = fromList xs
+    formDAWG'   = revDAWG baseDAWG'
 
 
 -- | Identify entries which contain given word form.
 withForm :: Ord i => Bila i a b -> Word -> LexSet i a b
 withForm Bila{..} word = M.unions
-    [ lookup base baseDict
-    | let lexSet = lookup word formDict
+    [ lookup base baseDAWG
+    | let lexSet = lookup word formDAWG
     , (_, val) <- M.assocs lexSet
     , base <- M.keys (forms val) ]
 
