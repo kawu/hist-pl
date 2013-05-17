@@ -1,8 +1,20 @@
+{-# LANGUAGE ScopedTypeVariables #-} 
+
+
 module NLP.HistPL.Binary.Util
 ( loadContents
 , emptyDirectory
 , maybeErr
+, maybeT
+, maybeErrT
 ) where
+
+
+import           Control.Applicative ((<$>))
+import           Control.Monad.IO.Class (liftIO, MonadIO)
+import           Control.Exception (try, SomeException)
+import           Control.Monad.Trans.Maybe (MaybeT (..))
+import           System.Directory (getDirectoryContents)
 
 
 -- | Load the directory contents.
@@ -34,5 +46,3 @@ maybeErrT :: MonadIO m => IO a -> MaybeT m a
 maybeErrT io = do
     r <- liftIO (maybeErr io)
     maybeT r
-
-
