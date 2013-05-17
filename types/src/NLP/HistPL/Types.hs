@@ -26,7 +26,7 @@ import           Data.Binary (Binary, put, get)
 import qualified Data.Text as T
 import           Data.Text.Binary ()
 
--- | Form or text representation.
+-- | Written representation of a form or a text.
 data Repr = Repr
     { writtenForm :: T.Text
     , language    :: T.Text
@@ -128,8 +128,8 @@ data LexEntry = LexEntry {
     , lemma         :: Lemma
     -- | Word forms of the lexeme.
     , forms         :: [WordForm]
-    -- | A list of components (only when the entry represent
-    -- a compound lexeme).
+    -- | A list of component identifiers (only when the entry
+    -- represents a compound lexeme).
     , components    :: [T.Text]
     -- | A list of potential syntactic behaviours of the lexeme.
     , syntactic     :: [SynBehaviour]
