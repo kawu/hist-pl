@@ -51,12 +51,17 @@ module NLP.HistPL.Lexicon
 -- ** Open
 , tryOpen
 , open
--- ** Query
+
+-- * Query
+-- ** By Form
 , lookup
 , lookupMany
+-- ** By Key
 , dictKeys
 , tryLoad
 , load
+-- ** By ID
+, dictIDs
 , tryLoad'
 , load'
 
@@ -282,6 +287,11 @@ load :: HistPL -> Key -> IO LexEntry
 load hpl key = tryLoad hpl key >>= maybe
     (fail $ "load: failed to open entry with the " ++ show key ++ " key")
     return
+
+
+-- | List of dictionary IDs.
+dictIDs :: HistPL -> IO [T.Text]
+dictIDs hpl = map T.pack <$> loadContents (dictPath hpl </> entryDir)
 
 
 -- | Load lexical entry given its ID.  Return `Nothing` if there
