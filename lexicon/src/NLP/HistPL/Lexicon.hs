@@ -179,7 +179,7 @@ getKeys = snd . mapAccumL getKey DD.empty
 
 -- | Save (key, lexID) pair in the keys component of the binary dictionary.
 saveKey :: FilePath -> Key -> T.Text -> IO ()
-saveKey path key i = T.writeFile (path </> keyDir </> showKey key) i 
+saveKey path key i = T.writeFile (path </> keyDir </> showKey key) i
 
 
 -- | Load lexID given the corresponding key.
@@ -273,8 +273,7 @@ dictKeys hpl = map parseKey <$> loadContents (dictPath hpl </> entryDir)
 -- | Load lexical entry given its key.  Return `Nothing` if there
 -- is no entry with such a key.
 tryLoad :: HistPL -> Key -> IO (Maybe LexEntry)
-tryLoad hpl key = unsafeInterleaveIO $
-    tryLoadEntry (dictPath hpl </> entryDir) key
+tryLoad hpl key = unsafeInterleaveIO $ tryLoadEntry (dictPath hpl) key
 
 
 -- | Load lexical entry given its key.  Raise error if there
@@ -340,19 +339,17 @@ build binPath xs = do
     createDirectoryIfMissing True binPath
     emptyDirectory binPath >>= \empty -> unless empty $ do
         error $ "build: directory " ++ binPath ++ " is not empty"
-    createDirectory entryPath
-    createDirectory keyPath
+    createDirectory $ binPath </> entryDir
+    createDirectory $ binPath </> keyDir
     formMap' <- D.fromList . concat <$>
         LazyIO.mapM saveBin (zip3 keys entries forms)
     encodeFile (binPath </> formFile) formMap'
     return $ HistPL binPath formMap'
   where
-    entryPath = binPath </> entryDir
-    keyPath   = binPath </> keyDir
     (entries, forms) = unzip xs
     keys = getKeys entries
     saveBin (key, lexEntry, otherForms) = do
-        saveEntry entryPath key lexEntry
+        saveEntry binPath key lexEntry
         let D.Key{..} = key
             histForms = S.fromList (Util.allForms lexEntry)
             onlyHist  = S.difference histForms otherForms
