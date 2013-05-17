@@ -12,6 +12,8 @@ module NLP.HistPL.Fusion
 , IsBase
 
 -- * Dictionary
+, BaseDAWG
+, FormDAWG
 -- ** Bilateral
 , Bila (..)
 , mkBila
