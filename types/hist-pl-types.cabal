@@ -1,6 +1,6 @@
 name:               hist-pl-types
 version:            0.1.0
-synopsis:            
+synopsis:           Types in the historical dictionary of Polish
 description:
     The library provides a data type hierarchy which mirrors the hierarchy
     of elements present in the original, LMF representation of the
