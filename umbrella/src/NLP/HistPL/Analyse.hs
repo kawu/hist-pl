@@ -180,7 +180,7 @@ jsonTok jc tok = object $
 -- | JSON represesentation of a historical interpretation.
 jsonHist :: JConf -> (H.LexEntry, H.Code) -> Value
 jsonHist jc (entry, code) = object $
-    [ "id"   .= jsonID (H.lexId entry, code)
+    [ "id"   .= jsonID (H.lexID entry, code)
     , "pos"  .= H.pos entry
     , "base" .= H.text (H.lemma entry) ]
     ++ if showDefs jc then [defsElem] else []

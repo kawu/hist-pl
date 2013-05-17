@@ -18,7 +18,7 @@ import qualified Data.Aeson as Aeson
 
 import qualified Data.PoliMorf as P
 import qualified NLP.HistPL.LMF as LMF
-import qualified NLP.HistPL.Dict as D
+import qualified NLP.HistPL.DAWG as D
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.Fusion as F
 import qualified NLP.HistPL.Analyse as A
@@ -107,7 +107,7 @@ exec Create{..} = do
     -- putStrLn "Reading historical dictionary of Polish..."
     hist <- LMF.readLMF lmfPath
     -- putStrLn "Creating the binary version of the dictionary..."
-    void $ H.save outPath (addForms poli hist)
+    void $ H.build outPath (addForms poli hist)
   where
     addForms poli hist =
         [ ( lexEntry
@@ -121,7 +121,7 @@ exec Create{..} = do
 
 exec Print{..} = do
     hpl <- H.open binPath
-    H.load hpl >>= L.putStr . LMF.showLMF . map snd
+    H.loadAll hpl >>= L.putStr . LMF.showLMF . map snd
 
 
 exec Analyse{..} = do

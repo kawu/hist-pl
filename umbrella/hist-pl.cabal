@@ -1,5 +1,5 @@
 name:               hist-pl
-version:            0.2.1
+version:            0.3.0
 synopsis:           Umbrella package for the historical dictionary of Polish
 description:
     The package provides a tool for creating and searching the
@@ -22,7 +22,7 @@ library
                     , containers
                     , text
                     , aeson >= 0.6 && < 0.7
-                    , hist-pl-lexicon >= 0.4 && < 0.5
+                    , hist-pl-lexicon >= 0.5 && < 0.6
                     , hist-pl-transliter >= 0.1 && < 0.2
                     , morfeusz >= 0.4 && < 0.5
 
@@ -35,8 +35,10 @@ executable hist-pl
                     , bytestring
                     , aeson-pretty >= 0.7 && < 0.8
                     , polimorf >= 0.7.1 && < 0.8
-                    , hist-pl-lexicon >= 0.4 && < 0.5
-                    , hist-pl-fusion >= 0.4 && < 0.5
+                    , hist-pl-lexicon >= 0.5 && < 0.6
+                    , hist-pl-fusion >= 0.5 && < 0.6
+                    , hist-pl-dawg >= 0.1 && < 0.2
+                    , hist-pl-lmf >= 0.1 && < 0.2
 
 source-repository head
     type: git
