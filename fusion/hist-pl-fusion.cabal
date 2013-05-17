@@ -1,5 +1,5 @@
 name:               hist-pl-fusion
-version:            0.5.0
+version:            0.5.1
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
