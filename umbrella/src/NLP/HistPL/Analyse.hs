@@ -124,9 +124,9 @@ anaCont = map R.interps . head . R.paths . R.analyse False
 
 -- | When contemporary interpretations should be shown.
 data ShowCont
-    = NoShowCont
-    | ShowCont
-    | ForceShowCont
+    = NoShowCont    -- ^ Never
+    | ShowCont      -- ^ When no historical interpretation
+    | ForceShowCont -- ^ Alwas
     deriving (Show, Eq, Ord)
 
 
