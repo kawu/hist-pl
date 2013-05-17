@@ -267,7 +267,7 @@ open path = tryOpen path >>=
 
 -- | List of dictionary keys.
 dictKeys :: HistPL -> IO [Key]
-dictKeys hpl = map parseKey <$> loadContents (dictPath hpl </> entryDir)
+dictKeys hpl = map parseKey <$> loadContents (dictPath hpl </> keyDir)
 
 
 -- | Load lexical entry given its key.  Return `Nothing` if there
