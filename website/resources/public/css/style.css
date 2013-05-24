@@ -1,29 +1,4 @@
-html {
-   padding: 0;
-   margin: 10;
-   background-color: #ffffff;
-   font-family: Verdana, Helvetica, sans-serif;
-}
-body {
-   padding: 0;
-   margin: 0;
-}
-a {
-   text-decoration: underline;
-}
-a :hover {
-   cursor: pointer;
-   text-decoration: underline;
-}
-img {
-   border: none;
-}
-#content {
-   padding-left: 1em;
-}
-#info {
-   font-size: 60%;
-}
+/* Lexical entry XML structure */
 
 pre.sourceCode { font-size: 100%; padding: 16px 16px 16px 32px; margin-top: 29px;}
 pre.sourceCode { }
@@ -33,3 +8,41 @@ pre.sourceCode span.String, pre.sourceCode span.st { font-weight: bold; }
 pre.sourceCode span.String, pre.sourceCode span.st { color: green; }
 pre.sourceCode span.Comment, pre.sourceCode span.co { color: #999; font-style: italic; }
 pre.sourceCode span.Others { }
+
+
+/* Two column layout */
+
+#left_col {
+    float: left;
+    width:49%;
+}
+
+#right_col {
+    float: right;
+    width: 49%;
+}
+
+/* Textarea */
+
+textarea {
+    /* Box-sizing */
+    width: 100%;
+    -webkit-box-sizing: border-box; /* <=iOS4, <= Android  2.3 */
+    -moz-box-sizing: border-box; /* FF1+ */
+    box-sizing: border-box; /* Chrome, IE8, Opera, Safari 5.1*/
+
+    /* A nice border */
+    border: 3px solid #cccccc;
+    padding: 5px;
+    font-family: Tahoma, sans-serif;
+}
+
+/* Misc */
+
+.centered { margin: 0 auto; }
+
+hr {
+    border: 0;
+    background-color: #cccccc;
+    height: 6px;
+}

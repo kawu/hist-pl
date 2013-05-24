@@ -57,7 +57,8 @@ appInit :: FilePath -> SnapletInit App App
 appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
     hs <- nestSnaplet "heist" heist $ heistInit "templates"
     modifyHeistState $ bindSplices
-        [ ("lex-entry", lexSplice) ]
+        [ ("lex-entry", lexSplice)
+        , ("ana-result", anaSplice) ]
     hp <- liftIO $ H.open binPath
     addRoutes [ ("hello", writeText "hello world")
               , ("echo", echoHandler)
@@ -146,6 +147,12 @@ factSplice = do
     let text = T.unpack $ X.nodeText input
         n = read text :: Int
     return [X.TextNode $ T.pack $ show $ product [1..n]]
+
+
+-- | Analysis splice.
+anaSplice :: Splice AppH
+anaSplice = 
+    return [X.TextNode "HAHAHA"]
 
 
 ----------------------------------
