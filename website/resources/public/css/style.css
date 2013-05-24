@@ -12,6 +12,10 @@ pre.sourceCode span.Others { }
 
 /* Two column layout */
 
+#wrap {
+    font-family: Tahoma, sans-serif;
+}
+
 #left_col {
     float: left;
     width:49%;
@@ -19,6 +23,7 @@ pre.sourceCode span.Others { }
 
 #right_col {
     float: right;
+    padding: 8px;   /* See textarea below */
     width: 49%;
 }
 

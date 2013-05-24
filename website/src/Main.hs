@@ -13,7 +13,7 @@ import           Snap.Snaplet.Heist
 import           Snap.Util.FileServe (serveDirectory)
 import           Heist
 import           Heist.Interpreted hiding (textSplice)
-import           Data.List (intercalate)
+import           Data.List (intercalate, find)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as L
@@ -23,6 +23,7 @@ import qualified Text.Pandoc as Pandoc
 
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.LMF as H
+import qualified NLP.HistPL.Analyse as A
 
 
 ----------------------------------
@@ -58,7 +59,8 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
     hs <- nestSnaplet "heist" heist $ heistInit "templates"
     modifyHeistState $ bindSplices
         [ ("lex-entry", lexSplice)
-        , ("ana-result", anaSplice) ]
+        , ("ana-input", anaInpSplice)
+        , ("ana-output", anaOutSplice) ]
     hp <- liftIO $ H.open binPath
     addRoutes [ ("hello", writeText "hello world")
               , ("echo", echoHandler)
@@ -68,15 +70,8 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
 
 
 ----------------------------------
--- Splices and handlers
+-- Search handlers and splices
 ----------------------------------
-
-
--- | Echoes @echoparam@ parameter.
-echoHandler :: AppH ()
-echoHandler = do
-    param <- getParam "echoparam"
-    maybe (writeBS "must specify echo/param in URL") writeBS param
 
 
 -- | Show information about lexemes specified by an identifier or a form.
@@ -140,6 +135,45 @@ lexToHTML entry
         . L.unpack . H.showLexEntry
 
 
+----------------------------------
+-- Analysis handlers and splices
+----------------------------------
+
+
+-- | Analysis input splice.
+anaInpSplice :: Splice AppH
+anaInpSplice = do
+    input <- maybe "" id <$> getPostParam "input"
+    return [X.TextNode $ T.decodeUtf8 input]
+
+
+-- | Analysis output splice.
+anaOutSplice :: Splice AppH
+anaOutSplice = do
+    hpl   <- gets _histPL
+    input <- T.decodeUtf8 . maybe "" id <$> getPostParam "input"
+    concat <$> mapM (anaLine hpl) (T.lines input)
+  where
+    anaLine hpl line = mapM (anaTok hpl) (A.tokenize line)
+    anaTok _ (Right o)  = return $ X.TextNode (showOther o)
+--     anaTok hpl (Left x) = return $ addLink x $ X.TextNode x
+    anaTok hpl (Left x) = do
+        t <- liftIO $ A.anaWord hpl x
+        return $ if hasHist t
+            then addLink x (X.TextNode x)
+            else X.TextNode x
+    addLink x n = X.Element "a" [("href", "../lex?form=" `T.append` x)] [n]
+    showOther (A.Pun x)   = x
+    showOther (A.Space x) = x
+    hasHist tok = isJust $ find ((/=) H.Orig . snd) (A.hist tok)
+
+
+
+----------------------------------
+-- Examples
+----------------------------------
+
+
 -- | Factorial splice.
 factSplice :: Splice AppH
 factSplice = do
@@ -149,10 +183,11 @@ factSplice = do
     return [X.TextNode $ T.pack $ show $ product [1..n]]
 
 
--- | Analysis splice.
-anaSplice :: Splice AppH
-anaSplice = 
-    return [X.TextNode "HAHAHA"]
+-- | Echoes @echoparam@ parameter.
+echoHandler :: AppH ()
+echoHandler = do
+    param <- getParam "echoparam"
+    maybe (writeBS "must specify echo/param in URL") writeBS param
 
 
 ----------------------------------
