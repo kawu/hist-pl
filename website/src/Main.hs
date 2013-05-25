@@ -156,7 +156,6 @@ anaOutSplice = do
   where
     anaLine hpl line = mapM (anaTok hpl) (A.tokenize line)
     anaTok _ (Right o)  = return $ X.TextNode (showOther o)
---     anaTok hpl (Left x) = return $ addLink x $ X.TextNode x
     anaTok hpl (Left x) = do
         t <- liftIO $ A.anaWord hpl x
         return $ if hasHist t
@@ -165,7 +164,7 @@ anaOutSplice = do
     addLink x n = X.Element "a" [("href", "../lex?form=" `T.append` x)] [n]
     showOther (A.Pun x)   = x
     showOther (A.Space x) = x
-    hasHist tok = isJust $ find ((/=) H.Orig . snd) (A.hist tok)
+    hasHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)
 
 
 
