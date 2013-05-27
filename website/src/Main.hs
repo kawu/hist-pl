@@ -93,8 +93,9 @@ lexByID = do
 lexByForm :: EitherT [String] (HeistT AppH AppH) Template
 lexByForm = do
     hpl <- gets _histPL
-    form <- lift (getParam "form") >>= tryJust ["Param @form not specified"]
-    entries <- liftIO $ H.lookup hpl $ T.decodeUtf8 form
+    form <- T.decodeUtf8 <$> ( lift (getParam "form")
+        >>= tryJust ["Param @form not specified"] )
+    entries <- liftIO $ H.lookupMany hpl [form, T.toLower form]
     hoistEither $ decorate entries
   where
     decorate xs = do
