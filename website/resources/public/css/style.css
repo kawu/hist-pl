@@ -40,6 +40,13 @@ textarea {
     border: 3px solid #cccccc;
     padding: 5px;
     font-family: Tahoma, sans-serif;
+
+    /* No horizontal resize
+    resize: vertical; */
+    resize: none;
+
+    /* Autoresize -- no scroll-bar */
+    overflow: hidden;
 }
 
 /* Preserving whitespaces in code (inline verbatim) */
@@ -65,8 +72,18 @@ code {
 }
 .fl a:hover {
     text-decoration: none;
-    font-weight:bold;
+    font-weight: bold;
     color: #004400;
+}
+
+/* "Znakuj" input button */
+
+input {
+    border: none;
+    width: 100px;
+    font-size: 16px;
+    padding: 6px;
+    font-weight: bold;
 }
 
 /* Misc */
