@@ -165,17 +165,25 @@ anaOutSplice = do
         t <- liftIO $ A.anaWord hpl x
         let n = X.Element "code" [] [X.TextNode x]
         return $ if hasHist t
-            then addLink x n
+            then addLink x (showTip t) n
             else n
-    addLink x n =
-        let xdiv = X.Element "div"
-                [("class", "fl"), ("style", "display: inline")]
+    addLink x tip n =
+        let xdiv = X.Element "span" [("class", "fl"), ("title", tip)]
             href = X.Element "a" [("href", "../lex?form=" `T.append` x)]
         in  xdiv [href [n]]
     showOther (A.Pun x)   = x
     showOther (A.Space x) = x
     hasHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)
+    showTip tok =
+        let defs = concatMap (lexDefs . fst) (A.hist tok)
+        in  T.intercalate "\n" $ map (T.intercalate ", ") defs
 
+
+-- | Get a list of lexeme definitions.
+lexDefs :: H.LexEntry -> [[T.Text]]
+lexDefs entry =
+    [ concat [H.text x | x <- H.defs sense]
+    | sense <- H.senses entry ]
 
 
 ----------------------------------
