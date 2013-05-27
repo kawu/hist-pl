@@ -151,18 +151,27 @@ anaInpSplice = do
 -- | Analysis output splice.
 anaOutSplice :: Splice AppH
 anaOutSplice = do
-    hpl   <- gets _histPL
-    input <- T.decodeUtf8 . maybe "" id <$> getPostParam "input"
-    concat <$> mapM (anaLine hpl) (T.lines input)
+    hpl <- gets _histPL
+    raw <- maybe "" id <$> getPostParam "input"
+    let input = T.filter (/='\r') (T.decodeUtf8 raw)
+        plug  = [X.Element "br" [] [], X.TextNode " "]
+    intercalate plug <$> mapM (anaLine hpl) (T.lines input)
   where
     anaLine hpl line = mapM (anaTok hpl) (A.tokenize line)
-    anaTok _ (Right o)  = return $ X.TextNode (showOther o)
+    anaTok _ (Right o)  = return $
+        let n = X.TextNode (showOther o)
+        in  X.Element "code" [] [n]
     anaTok hpl (Left x) = do
         t <- liftIO $ A.anaWord hpl x
+        let n = X.Element "code" [] [X.TextNode x]
         return $ if hasHist t
-            then addLink x (X.TextNode x)
-            else X.TextNode x
-    addLink x n = X.Element "a" [("href", "../lex?form=" `T.append` x)] [n]
+            then addLink x n
+            else n
+    addLink x n =
+        let xdiv = X.Element "div"
+                [("class", "fl"), ("style", "display: inline")]
+            href = X.Element "a" [("href", "../lex?form=" `T.append` x)]
+        in  xdiv [href [n]]
     showOther (A.Pun x)   = x
     showOther (A.Space x) = x
     hasHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)

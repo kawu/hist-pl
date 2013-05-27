@@ -9,7 +9,8 @@
 
   
   <body>
-    <div id="wrap" style="width:90%" class="centered">
+    <!--div id="wrap" style="width:90%" class="centered"-->
+    <div style="width:90%" class="centered">
 
       <h2>Słownik dawnej polszczyzny</h2>
       <hr><br>

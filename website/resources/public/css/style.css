@@ -12,9 +12,9 @@ pre.sourceCode span.Others { }
 
 /* Two column layout */
 
-#wrap {
+/* #wrap {
     font-family: Tahoma, sans-serif;
-}
+} */
 
 #left_col {
     float: left;
@@ -40,6 +40,33 @@ textarea {
     border: 3px solid #cccccc;
     padding: 5px;
     font-family: Tahoma, sans-serif;
+}
+
+/* Preserving whitespaces in code (inline verbatim) */
+
+code {
+    font-family: Tahoma, sans-serif;
+    white-space: pre-wrap;
+}
+
+/* Form links */
+
+.fl a:link {
+    text-decoration: none;
+    color: #006600;
+}
+.fl a:visited {
+    text-decoration: none;
+    color: #006600;
+}
+.fl a:active {
+    text-decoration: none;
+    color: #006600;
+}
+.fl a:hover {
+    text-decoration: none;
+    font-weight:bold;
+    color: #004400;
 }
 
 /* Misc */
