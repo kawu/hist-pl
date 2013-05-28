@@ -17,7 +17,7 @@
       <div id="left_col">
         <form method="post" action="">
         <textarea placeholder="Wpisz tekst" id="input"
-            name="input" rows="1" maxlength="10000"
+            name="input" rows="1" maxlength="100000"
             autofocus="autofocus"><ana-input/></textarea><br>
         <br><input type="submit" value="Znakuj"/>
         </form>
