@@ -2,7 +2,7 @@
 
 
 module NLP.HistPL.Binary.Util
-( loadContents
+( getUsefulContents
 , emptyDirectory
 , maybeErr
 , maybeT
@@ -18,15 +18,15 @@ import           System.Directory (getDirectoryContents)
 
 
 -- | Load the directory contents.
-loadContents :: FilePath -> IO [FilePath]
-loadContents path = do
-    xs <- getDirectoryContents path
-    return [x | x <- xs, x /= ".", x /= ".."]
+getUsefulContents :: FilePath -> IO [FilePath]
+getUsefulContents
+    = fmap (filter (`notElem` [".", ".."]))
+    . getDirectoryContents
 
 
 -- | Check if the directory is empty.
 emptyDirectory :: FilePath -> IO Bool
-emptyDirectory path = null <$> loadContents path
+emptyDirectory path = null <$> getUsefulContents path
 
 
 maybeErr :: MonadIO m => IO a -> m (Maybe a)

@@ -9,10 +9,10 @@ module NLP.HistPL.Binary
 
 import           Prelude hiding (lookup)
 import           Control.Applicative ((<$>))
+import           Control.Proxy
 import           System.FilePath ((</>))
 import           Data.Binary (encodeFile, decodeFile)
 import qualified Data.Text as T
-import qualified Control.Monad.LazyIO as LazyIO
 
 import           NLP.HistPL.Types
 import           NLP.HistPL.Binary.Util
@@ -35,12 +35,12 @@ tryLoad path i = maybeErr $ load path i
 
 
 -- | Get a list of entry identifiers stored in the dictionary.
-dictIDs :: FilePath -> IO [T.Text]
-dictIDs path = map T.pack <$> loadContents path
+dictIDs :: Proxy p => FilePath -> () -> Producer p T.Text IO ()
+dictIDs path () = runIdentityP $ do
+    xs <- map T.pack <$> lift (getUsefulContents path)
+    fromListS xs ()
 
 
 -- | Load all lexical entries in a lazy manner.
-loadAll :: FilePath -> IO [LexEntry]
-loadAll path = do
-    ids <- dictIDs path
-    LazyIO.forM ids $ load path
+loadAll :: Proxy p => FilePath -> () -> Producer p LexEntry IO ()
+loadAll path = dictIDs path >-> mapMD (load path)

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-} 
 {-# LANGUAGE RecordWildCards #-} 
 {-# LANGUAGE TupleSections #-} 
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE Rank2Types #-}
 
 
 {-|
@@ -66,7 +68,7 @@ module NLP.HistPL.Lexicon
 , loadI
 
 -- * Conversion
-, build
+-- , build
 , loadAll
 
 -- * Modules
@@ -75,23 +77,25 @@ module NLP.HistPL.Lexicon
 ) where
 
 
-import Prelude hiding (lookup)
-import Control.Applicative ((<$>))
-import Control.Monad (unless, guard, (<=<))
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad.Trans.Maybe (MaybeT (..))
-import qualified Control.Monad.LazyIO as LazyIO
-import System.IO.Unsafe (unsafeInterleaveIO)
-import System.FilePath ((</>))
-import System.Directory
+import           Prelude hiding (lookup)
+import           Control.Applicative ((<$>))
+import           Control.Monad (unless, guard, (<=<))
+-- import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Trans.Maybe (MaybeT (..))
+import           Control.Proxy
+import           Control.Proxy.Core.Fast (ProxyFast)
+import qualified Control.Proxy.Trans.State as S
+import           System.FilePath ((</>))
+import           System.Directory
     ( createDirectoryIfMissing, createDirectory, doesDirectoryExist )
-import Data.List (mapAccumL)
-import Data.Binary (Binary, put, get, encodeFile, decodeFile)
+import           Data.List (mapAccumL)
+import           Data.Binary (Binary, put, get, encodeFile, decodeFile)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.DAWG.Dynamic as DD
+import qualified Data.DAWG.Static as DS
 
 import qualified NLP.HistPL.Binary as B
 import           NLP.HistPL.Binary.Util
@@ -164,17 +168,30 @@ parseKey x =
 --------------------------------------------------------
 
 
-getKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, Key)
-getKey m x =
-    let main = proxy x
+-- getKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, Key)
+-- getKey m x =
+--     let main = proxy x
+--         path = T.unpack main
+--         num  = maybe 0 id (DD.lookup path m) + 1
+--         key  = D.Key main num
+--     in  (DD.insert path num m, key)
+
+
+-- getKeys :: [LexEntry] -> [Key]
+-- getKeys = snd . mapAccumL getKey DD.empty
+
+
+-- | Assign key to each lexical entry in the input.
+getKeys :: Proxy p => (a -> LexEntry) -> () -> p () a () (a, Key) IO r
+getKeys f () = S.evalStateP DD.empty $ forever $ do
+    d <- S.get
+    x <- request ()
+    let main = proxy (f x)
         path = T.unpack main
-        num  = maybe 0 id (DD.lookup path m) + 1
+        num  = maybe 0 id (DD.lookup path d) + (1 :: Int)
         key  = D.Key main num
-    in  (DD.insert path num m, key)
-
-
-getKeys :: [LexEntry] -> [Key]
-getKeys = snd . mapAccumL getKey DD.empty
+    S.put $ DD.insert path num d
+    respond (x, key)
 
 
 --------------------------------------------------------
@@ -255,10 +272,11 @@ instance Binary Code where
 -- constitute a dictionary.
 tryOpen :: FilePath -> IO (Maybe HistPL)
 tryOpen path = runMaybeT $ do
-    formMap'  <- maybeErrT $ decodeFile (path </> formFile)
-    doesExist <- liftIO $ doesDirectoryExist (path </> entryDir)
+    formMap  <- maybeErrT $ decodeFile (path </> formFile)
+    -- doesExist <- liftIO $ doesDirectoryExist (path </> entryDir)
+    doesExist <- lift $ doesDirectoryExist (path </> entryDir)
     guard doesExist 
-    return $ HistPL path formMap'
+    return $ HistPL path formMap
 
 
 -- | Open the binary dictionary residing in the given directory.
@@ -270,37 +288,43 @@ open path = tryOpen path >>=
 
 
 -- | List of dictionary keys.
-dictKeys :: HistPL -> IO [Key]
-dictKeys hpl = map parseKey <$> loadContents (dictPath hpl </> keyDir)
+dictKeys :: Proxy p => HistPL -> () -> Producer p Key IO ()
+dictKeys hpl () = runIdentityP $ do
+    let getPaths = getUsefulContents $ dictPath hpl </> keyDir
+    xs <- map parseKey <$> lift getPaths
+    fromListS xs ()
 
 
 -- | Load lexical entry given its key.  Raise error if there
 -- is no entry with such a key.
 loadK :: HistPL -> Key -> IO LexEntry
-loadK hpl = unsafeInterleaveIO . loadEntry (dictPath hpl)
+loadK hpl = loadEntry (dictPath hpl)
 
 
 -- | Load lexical entry given its key.  Return `Nothing` if there
 -- is no entry with such a key.
 tryLoadK :: HistPL -> Key -> IO (Maybe LexEntry)
-tryLoadK hpl = unsafeInterleaveIO . tryLoadEntry (dictPath hpl)
+tryLoadK hpl = tryLoadEntry (dictPath hpl)
 
 
 -- | List of dictionary IDs.
-dictIDs :: HistPL -> IO [T.Text]
-dictIDs hpl = map T.pack <$> loadContents (dictPath hpl </> entryDir)
+dictIDs :: Proxy p => HistPL -> () -> Producer p T.Text IO ()
+dictIDs hpl () = runIdentityP $ do
+    let getPaths = getUsefulContents $ dictPath hpl </> entryDir
+    xs <- map T.pack <$> lift getPaths
+    fromListS xs ()
 
 
 -- | Load lexical entry given its ID.  Raise error if there
 -- is no entry with such a key.
 loadI :: HistPL -> T.Text -> IO LexEntry
-loadI hpl i = unsafeInterleaveIO $ B.load (dictPath hpl </> entryDir) i
+loadI hpl i = B.load (dictPath hpl </> entryDir) i
 
 
 -- | Load lexical entry given its ID.  Return `Nothing` if there
 -- is no entry with such ID.
 tryLoadI :: HistPL -> T.Text -> IO (Maybe LexEntry)
-tryLoadI hpl i = unsafeInterleaveIO $ B.tryLoad (dictPath hpl </> entryDir) i
+tryLoadI hpl i = B.tryLoad (dictPath hpl </> entryDir) i
 
 
 -- | Lookup the form in the dictionary.
@@ -339,35 +363,42 @@ lookupMany hpl xs = do
 -- | Construct dictionary from a list of lexical entries and save it in
 -- the given directory.  To each entry an additional set of forms can
 -- be assigned.  
-build :: FilePath -> [(LexEntry, S.Set T.Text)] -> IO (HistPL)
+build
+    :: FilePath
+    -> (forall r. () -> Producer ProxyFast (LexEntry, S.Set T.Text) IO r)
+    -> IO (HistPL)
 build binPath xs = do
     createDirectoryIfMissing True binPath
     emptyDirectory binPath >>= \empty -> unless empty $ do
         error $ "build: directory " ++ binPath ++ " is not empty"
     createDirectory $ binPath </> entryDir
     createDirectory $ binPath </> keyDir
-    formMap' <- D.fromList . concat <$>
-        LazyIO.mapM saveBin (zip3 keys entries forms)
-    encodeFile (binPath </> formFile) formMap'
-    return $ HistPL binPath formMap'
+    formMap <- runProxy $ xs >-> getKeys fst >-> mkFormMap
+    encodeFile (binPath </> formFile) formMap
+    return $ HistPL binPath formMap
   where
-    (entries, forms) = unzip xs
-    keys = getKeys entries
-    saveBin (key, lexEntry, otherForms) = do
-        saveEntry binPath key lexEntry
-        let D.Key{..} = key
-            histForms = S.fromList (Util.allForms lexEntry)
-            onlyHist  = S.difference histForms otherForms
-            onlyOther = S.difference otherForms histForms
-            both      = S.intersection histForms otherForms
-            list c s  = [(y, uid, (), path, c) | y <- S.toList s]
-        return $ list Orig onlyHist ++ list Copy onlyOther ++ list Both both
+
+--     (entries, forms) = unzip xs
+--     keys = getKeys entries
+--     saveBin (key, lexEntry, otherForms) = do
+--         saveEntry binPath key lexEntry
+--         let D.Key{..} = key
+--             histForms = S.fromList (Util.allForms lexEntry)
+--             onlyHist  = S.difference histForms otherForms
+--             onlyOther = S.difference otherForms histForms
+--             both      = S.intersection histForms otherForms
+--             list c s  = [(y, uid, (), path, c) | y <- S.toList s]
+--         return $ list Orig onlyHist ++ list Copy onlyOther ++ list Both both
+
+
+-- | A consumer which constructs a `formMap` from a list.
+mkFormMap
+    :: Proxy p => ()
+    -> Consumer p ((LexEntry, S.Set T.Text), Key) IO (D.DAWG UID () Code)
+mkFormMap () = fmap DS.freeze . S.execStateP DD.empty $ do
+    undefined
 
 
 -- | Load all lexical entries in a lazy manner.
-loadAll :: HistPL -> IO [(Key, LexEntry)]
-loadAll hpl = do
-    keys <- dictKeys hpl
-    LazyIO.forM keys $ \key -> do
-        entry <- loadK hpl key
-        return (key, entry)
+loadAll :: Proxy p => HistPL -> () -> Producer p (Key, LexEntry) IO ()
+loadAll hpl = dictKeys hpl >-> mapMD (\x -> (x, ) <$> loadK hpl x)
