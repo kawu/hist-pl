@@ -13,7 +13,7 @@ import           Snap.Snaplet.Heist
 import           Snap.Util.FileServe (serveDirectory)
 import           Heist
 import           Heist.Interpreted hiding (textSplice)
-import           Data.List (intercalate, find)
+import           Data.List (intercalate)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as L
@@ -173,10 +173,23 @@ anaOutSplice = do
         in  xdiv [href [n]]
     showOther (A.Pun x)   = x
     showOther (A.Space x) = x
-    hasHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)
-    showTip tok =
-        let defs = concatMap (lexDefs . fst) (A.hist tok)
-        in  T.intercalate "\n" $ map (T.intercalate ", ") defs
+
+    -- Does the token have any obvious historical interpretation?
+    -- hasEvidentHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)
+
+    -- Does the token have any historical interpretation?
+    hasHist tok = length (A.hist tok) > 0
+
+    -- Show tooltip with definitions for each potential historical
+    -- interpretation of the token.
+    showTip tok = T.intercalate "\n"
+        [ T.append
+            (wrapBase $ baseForms entry)
+            (showDefs $ lexDefs entry)
+        | entry <- map fst $ A.hist tok ]
+    baseForms  = H.text . H.lemma
+    wrapBase x = "<<" `T.append` T.intercalate ", " x `T.append` ">>"
+    showDefs   = T.concat . map (T.append "\n * " . T.intercalate ", ")
 
 
 -- | Get a list of lexeme definitions.
