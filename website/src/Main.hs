@@ -227,5 +227,5 @@ echoHandler = do
 
 main :: IO ()
 main = do
-    [binPath] <- getArgs
+    binPath : _ <- getArgs
     serveSnaplet defaultConfig $ appInit binPath
