@@ -84,7 +84,7 @@ lexByID :: EitherT [String] (HeistT AppH AppH) Template
 lexByID = do
     hpl   <- gets _histPL
     lexID <- lift (getParam "id") >>= tryJust ["Param @id not specified"]
-    entry <- liftIO (H.tryLoad' hpl $ T.decodeUtf8 lexID) >>=
+    entry <- liftIO (H.tryLoadI hpl $ T.decodeUtf8 lexID) >>=
         tryJust ["No etries with given @id"]
     hoistEither $ lexToHTML entry
 

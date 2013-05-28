@@ -31,7 +31,7 @@ executable hist-pl-website
     lens,
     transformers              >= 0.3   && < 0.4,
     errors                    >= 1.4   && < 3.5,
-    hist-pl-lexicon           >= 0.5   && < 0.6,
+    hist-pl-lexicon           >= 0.6   && < 0.7,
     hist-pl-lmf               >= 0.1   && < 0.2,
     hist-pl                   >= 0.3   && < 0.4,
     pandoc                    >= 1.11  && < 1.12,

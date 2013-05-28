@@ -26,13 +26,12 @@ save path x = encodeFile (path </> T.unpack (lexID x)) x
 
 -- | Lookup entry with a given `lexID`.
 load :: FilePath -> T.Text -> IO LexEntry
-load path i = tryLoad path i >>=
-    maybe (fail "load: failed to load the entry") return
+load path i = decodeFile (path </> T.unpack i)
 
 
 -- | Lookup entry with a given `lexID`.
 tryLoad :: FilePath -> T.Text -> IO (Maybe LexEntry)
-tryLoad path i = maybeErr $ decodeFile (path </> T.unpack i)
+tryLoad path i = maybeErr $ load path i
 
 
 -- | Get a list of entry identifiers stored in the dictionary.

@@ -35,7 +35,7 @@
     [["dufliwy"]]
 
     Finally, if you need to follow an ID pointer kept in one entry
-    as a reference to another one, use the `load'` or `tryLoad'`
+    as a reference to another one, use the `loadI` or `tryLoadI`
     functions.
 -}
 
@@ -58,12 +58,12 @@ module NLP.HistPL.Lexicon
 , lookupMany
 -- ** By Key
 , dictKeys
-, tryLoad
-, load
+, tryLoadK
+, loadK
 -- ** By ID
 , dictIDs
-, tryLoad'
-, load'
+, tryLoadI
+, loadI
 
 -- * Conversion
 , build
@@ -77,7 +77,7 @@ module NLP.HistPL.Lexicon
 
 import Prelude hiding (lookup)
 import Control.Applicative ((<$>))
-import Control.Monad (unless, guard)
+import Control.Monad (unless, guard, (<=<))
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import qualified Control.Monad.LazyIO as LazyIO
@@ -204,16 +204,14 @@ saveEntry path key x = do
     B.save (path </> entryDir) x
 
 
--- -- | Load entry from a disk by its key.
--- loadEntry :: FilePath -> Key -> IO LexEntry
--- loadEntry path key = tryLoadEntry path key >>=
---     maybe (fail "load: failed to load the entry") return
+-- | Load entry from a disk by its key.
+loadEntry :: FilePath -> Key -> IO LexEntry
+loadEntry path = B.load (path </> entryDir) <=< loadKey path
 
 
 -- | Load entry from a disk by its key.
 tryLoadEntry :: FilePath -> Key -> IO (Maybe LexEntry)
-tryLoadEntry path key = maybeErr $ do
-    B.load (path </> entryDir) =<< loadKey path key
+tryLoadEntry path = maybeErr . loadEntry path
 
 
 --------------------------------------------------------
@@ -232,7 +230,8 @@ data HistPL = HistPL {
     }
 
 
--- | Code of word form origin.
+-- | Code of a word form origin.  See the `build` function to
+-- learn why do we provide this information.
 data Code
     = Orig  -- ^ only from historical dictionary
     | Both  -- ^ from both historical and another dictionary
@@ -275,18 +274,16 @@ dictKeys :: HistPL -> IO [Key]
 dictKeys hpl = map parseKey <$> loadContents (dictPath hpl </> keyDir)
 
 
--- | Load lexical entry given its key.  Return `Nothing` if there
--- is no entry with such a key.
-tryLoad :: HistPL -> Key -> IO (Maybe LexEntry)
-tryLoad hpl key = unsafeInterleaveIO $ tryLoadEntry (dictPath hpl) key
-
-
 -- | Load lexical entry given its key.  Raise error if there
 -- is no entry with such a key.
-load :: HistPL -> Key -> IO LexEntry
-load hpl key = tryLoad hpl key >>= maybe
-    (fail $ "load: failed to open entry with the " ++ show key ++ " key")
-    return
+loadK :: HistPL -> Key -> IO LexEntry
+loadK hpl = unsafeInterleaveIO . loadEntry (dictPath hpl)
+
+
+-- | Load lexical entry given its key.  Return `Nothing` if there
+-- is no entry with such a key.
+tryLoadK :: HistPL -> Key -> IO (Maybe LexEntry)
+tryLoadK hpl = unsafeInterleaveIO . tryLoadEntry (dictPath hpl)
 
 
 -- | List of dictionary IDs.
@@ -294,18 +291,16 @@ dictIDs :: HistPL -> IO [T.Text]
 dictIDs hpl = map T.pack <$> loadContents (dictPath hpl </> entryDir)
 
 
--- | Load lexical entry given its ID.  Return `Nothing` if there
--- is no entry with such ID.
-tryLoad' :: HistPL -> T.Text -> IO (Maybe LexEntry)
-tryLoad' hpl i = unsafeInterleaveIO $ B.tryLoad (dictPath hpl </> entryDir) i
-
-
 -- | Load lexical entry given its ID.  Raise error if there
 -- is no entry with such a key.
-load' :: HistPL -> T.Text -> IO LexEntry
-load' hpl i = tryLoad' hpl i >>= maybe
-    (fail $ "load': failed to load entry with the " ++ T.unpack i ++ " ID")
-    return
+loadI :: HistPL -> T.Text -> IO LexEntry
+loadI hpl i = unsafeInterleaveIO $ B.load (dictPath hpl </> entryDir) i
+
+
+-- | Load lexical entry given its ID.  Return `Nothing` if there
+-- is no entry with such ID.
+tryLoadI :: HistPL -> T.Text -> IO (Maybe LexEntry)
+tryLoadI hpl i = unsafeInterleaveIO $ B.tryLoad (dictPath hpl </> entryDir) i
 
 
 -- | Lookup the form in the dictionary.
@@ -313,7 +308,7 @@ lookup :: HistPL -> T.Text -> IO [(LexEntry, Code)]
 lookup hpl x = do
     let lexSet = D.lookup x (formMap hpl)
     sequence
-        [ (   , code) <$> load hpl key
+        [ (   , code) <$> loadK hpl key
         | (key, code) <- getCode =<< M.assocs lexSet ]
   where
     getCode (key, val) =
@@ -328,7 +323,7 @@ lookupMany hpl xs = do
             getCode =<< M.assocs =<<
             (flip D.lookup (formMap hpl) <$> xs)
     sequence
-        [ (   , code) <$> load hpl key
+        [ (   , code) <$> loadK hpl key
         | (key, code) <- M.toList keyMap ]
   where
     getCode (key, val) =
@@ -374,5 +369,5 @@ loadAll :: HistPL -> IO [(Key, LexEntry)]
 loadAll hpl = do
     keys <- dictKeys hpl
     LazyIO.forM keys $ \key -> do
-        entry <- load hpl key
+        entry <- loadK hpl key
         return (key, entry)

@@ -1,5 +1,5 @@
 name:               hist-pl-fusion
-version:            0.5.1
+version:            0.5.2
 synopsis:           Merging historical dictionary with PoliMorf
 description:
     The library provides functions for merging historical dictionary
@@ -26,7 +26,7 @@ library
       , dawg >= 0.9 && < 0.10
       , polimorf >= 0.7.1 && < 0.8
       , hist-pl-dawg >= 0.1 && < 0.2
-      , hist-pl-lexicon >= 0.5 && < 0.6
+      , hist-pl-lexicon >= 0.6 && < 0.7
 
     exposed-modules:
         NLP.HistPL.Fusion
