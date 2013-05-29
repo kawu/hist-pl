@@ -1,8 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-} 
 {-# LANGUAGE RecordWildCards #-} 
 {-# LANGUAGE TupleSections #-} 
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE Rank2Types #-}
 
 
 {-|
@@ -68,7 +66,7 @@ module NLP.HistPL.Lexicon
 , loadI
 
 -- * Conversion
--- , build
+, build
 , loadAll
 
 -- * Modules
@@ -79,23 +77,21 @@ module NLP.HistPL.Lexicon
 
 import           Prelude hiding (lookup)
 import           Control.Applicative ((<$>))
-import           Control.Monad (unless, guard, (<=<))
--- import           Control.Monad.IO.Class (liftIO)
+import           Control.Arrow (first, second)
+import           Control.Monad (unless, guard)
 import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Control.Proxy
-import           Control.Proxy.Core.Fast (ProxyFast)
 import qualified Control.Proxy.Trans.State as S
 import           System.FilePath ((</>))
 import           System.Directory
     ( createDirectoryIfMissing, createDirectory, doesDirectoryExist )
-import           Data.List (mapAccumL)
+import           Data.List (foldl')
 import           Data.Binary (Binary, put, get, encodeFile, decodeFile)
 import qualified Data.Set as S
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import qualified Data.DAWG.Dynamic as DD
-import qualified Data.DAWG.Static as DS
+import qualified Data.DAWG.Dynamic as DM
 
 import qualified NLP.HistPL.Binary as B
 import           NLP.HistPL.Binary.Util
@@ -161,37 +157,6 @@ parseKey :: String -> Key
 parseKey x =
     let (uid'S, (_:form'S)) = break (=='-') x
     in  D.Key (T.pack form'S) (read uid'S)
-
-
---------------------------------------------------------
--- Computing keys
---------------------------------------------------------
-
-
--- getKey :: DD.DAWG Char Int -> LexEntry -> (DD.DAWG Char Int, Key)
--- getKey m x =
---     let main = proxy x
---         path = T.unpack main
---         num  = maybe 0 id (DD.lookup path m) + 1
---         key  = D.Key main num
---     in  (DD.insert path num m, key)
-
-
--- getKeys :: [LexEntry] -> [Key]
--- getKeys = snd . mapAccumL getKey DD.empty
-
-
--- | Assign key to each lexical entry in the input.
-getKeys :: Proxy p => (a -> LexEntry) -> () -> p () a () (a, Key) IO r
-getKeys f () = S.evalStateP DD.empty $ forever $ do
-    d <- S.get
-    x <- request ()
-    let main = proxy (f x)
-        path = T.unpack main
-        num  = maybe 0 id (DD.lookup path d) + (1 :: Int)
-        key  = D.Key main num
-    S.put $ DD.insert path num d
-    respond (x, key)
 
 
 --------------------------------------------------------
@@ -363,40 +328,52 @@ lookupMany hpl xs = do
 -- | Construct dictionary from a list of lexical entries and save it in
 -- the given directory.  To each entry an additional set of forms can
 -- be assigned.  
-build
-    :: FilePath
-    -> (forall r. () -> Producer ProxyFast (LexEntry, S.Set T.Text) IO r)
-    -> IO (HistPL)
-build binPath xs = do
-    createDirectoryIfMissing True binPath
-    emptyDirectory binPath >>= \empty -> unless empty $ do
-        error $ "build: directory " ++ binPath ++ " is not empty"
-    createDirectory $ binPath </> entryDir
-    createDirectory $ binPath </> keyDir
-    formMap <- runProxy $ xs >-> getKeys fst >-> mkFormMap
-    encodeFile (binPath </> formFile) formMap
+build :: Proxy p => FilePath -> () -> Consumer p (LexEntry, S.Set T.Text) IO HistPL
+build binPath () = runIdentityP $ do
+
+    -- Prepare directory for the dictionary.
+    lift $ do
+        createDirectoryIfMissing True binPath
+        emptyDirectory binPath >>= \empty -> unless empty $ do
+            error $ "build: directory " ++ binPath ++ " is not empty"
+        createDirectory $ binPath </> entryDir
+        createDirectory $ binPath </> keyDir
+
+    formMap <- fmap (D.freeze . fst) $
+      -- The first state component represents the `formMap` initializer.
+      -- The second component is used to compute keys for individual entries.
+        S.execStateP (D.empty, DM.empty) $ forever $ do
+            (entry, forms) <- request ()
+            key <- getKey entry
+            saveBin key entry forms
+    lift $ encodeFile (binPath </> formFile) formMap
     return $ HistPL binPath formMap
+
   where
 
---     (entries, forms) = unzip xs
---     keys = getKeys entries
---     saveBin (key, lexEntry, otherForms) = do
---         saveEntry binPath key lexEntry
---         let D.Key{..} = key
---             histForms = S.fromList (Util.allForms lexEntry)
---             onlyHist  = S.difference histForms otherForms
---             onlyOther = S.difference otherForms histForms
---             both      = S.intersection histForms otherForms
---             list c s  = [(y, uid, (), path, c) | y <- S.toList s]
---         return $ list Orig onlyHist ++ list Copy onlyOther ++ list Both both
+   -- Compute key of the entry.
+   getKey entry = do 
+        km <- snd <$> S.get
+        let main = proxy entry
+            path = T.unpack main
+            num  = maybe 0 id (DM.lookup path km) + (1 :: Int)
+            key  = D.Key main num
+        S.modify $ second $ DM.insert path num
+        return key
 
-
--- | A consumer which constructs a `formMap` from a list.
-mkFormMap
-    :: Proxy p => ()
-    -> Consumer p ((LexEntry, S.Set T.Text), Key) IO (D.DAWG UID () Code)
-mkFormMap () = fmap DS.freeze . S.execStateP DD.empty $ do
-    undefined
+   -- Save binary entry on a disk and update the map of forms.
+   saveBin key entry otherForms = do
+        lift $ saveEntry binPath key entry
+        let D.Key{..} = key
+            histForms = S.fromList (Util.allForms entry)
+            onlyHist  = S.difference histForms otherForms
+            onlyOther = S.difference otherForms histForms
+            both      = S.intersection histForms otherForms
+            list c s  = [(y, uid, (), path, c) | y <- S.toList s]
+            xs        = list Orig onlyHist
+                     ++ list Copy onlyOther
+                     ++ list Both both
+        S.modify $ first $ flip (foldl' (flip D.insert)) xs
 
 
 -- | Load all lexical entries in a lazy manner.
