@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 
 
--- | A `D.DAWG`-based dictionary with additional information
+-- | A `DS.DAWG`-based dictionary with additional information
 -- assigned to lexical entries and word forms.
 
 
@@ -13,19 +13,26 @@ module NLP.HistPL.DAWG
 , apply
 , between
 
--- * DAWG
-, DAWG
--- ** Entry
+-- * Entry
 , Lex (..)
 , Key (..)
 , Val (..)
-, Node
--- ** Entry set
+
+-- * Entry set
 , LexSet
 , mkLexSet
 , unLexSet
--- , encode
+, Node
 , decode
+
+
+-- * DAWG
+, DAWG
+-- ** Initialization
+, DAWG'Init
+, empty
+, insert
+, freeze
 -- ** Query
 , lookup
 -- ** Conversion
@@ -41,9 +48,11 @@ import           Control.Applicative ((<$>), (<*>))
 import           Control.Arrow (first)
 import           Data.Binary (Binary, get, put)
 import           Data.Text.Binary ()
+import           Data.List (foldl')
 import qualified Data.Map as M
 import qualified Data.Text as T
-import qualified Data.DAWG.Static as D
+import qualified Data.DAWG.Static as DS
+import qualified Data.DAWG.Dynamic as DM
 
 
 ------------------------------------------------------------------------
@@ -121,6 +130,11 @@ data Lex i a b = Lex {
     deriving (Show, Eq, Ord)
 
 
+------------------------------------------------------------------------
+-- Set of entries 
+------------------------------------------------------------------------
+
+
 -- | A set of dictionary entries.
 type LexSet i a b = M.Map (Key i) (Val a T.Text b)
 
@@ -135,16 +149,16 @@ unLexSet :: LexSet i a b -> [Lex i a b]
 unLexSet = map (uncurry Lex) . M.toList
 
 
--- | Actual values stored in automaton states contain
--- all entry information but `path`.
-type Node i a b = M.Map i (Val a Rule b)
-
-
 -- | Map function over entry word forms.
 mapW :: Ord w' => (w -> w') -> Val a w b -> Val a w' b
 mapW f v =
     let g = M.fromList . map (first f) . M.toList
     in  v { forms = g (forms v) }
+
+
+-- | Actual values stored in automaton states contain
+-- all entry information but `path`.
+type Node i a b = M.Map i (Val a Rule b)
 
 
 -- | Decode dictionary value given `path`.
@@ -162,36 +176,76 @@ toListE (Lex Key{..} Val{..}) =
 
 
 ------------------------------------------------------------------------
+-- DAWG 
+------------------------------------------------------------------------
 
 
 -- | A dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type DAWG i a b = D.DAWG Char () (Node i a b)
+type DAWG i a b = DS.DAWG Char () (Node i a b)
+
+
+------------------------------------------------------------------------
+-- Initialization 
+------------------------------------------------------------------------
+
+
+-- | A `DAWG` initialization structure (a dynamic DAWG).
+type DAWG'Init i a b = DM.DAWG Char (Node i a b)
+
+
+-- | An empty `DAWG'Init`.
+empty :: (Ord i, Ord a, Ord b) => DAWG'Init i a b
+empty = DM.empty
+
+
+-- | Insert a (key, ID, entry info, form, entry\/form info) into a
+-- `DAWG'Init` structure.
+insert
+    :: (Ord i, Ord a, Ord b)
+    => (T.Text, i, a, T.Text, b)
+    -> DAWG'Init i a b
+    -> DAWG'Init i a b
+insert (x, i, a, y, b) = DM.insertWith union
+    (T.unpack x)
+    (M.singleton i (Val a (M.singleton (between x y) b)))
+  where
+    union = M.unionWith $ both const M.union
+    both f g (Val x0 y0) (Val x1 y1) = Val (f x0 x1) (g y0 y1)
+
+
+-- | Freeze the initializator.
+freeze :: DAWG'Init i a b -> DAWG i a b
+freeze = DS.freeze
+
+
+------------------------------------------------------------------------
+-- Query 
+------------------------------------------------------------------------
 
 
 -- | Lookup the key in the dictionary.
 lookup :: Ord i => T.Text -> DAWG i a b -> LexSet i a b
-lookup x dict = decode x $ case D.lookup (T.unpack x) dict of
+lookup x dict = decode x $ case DS.lookup (T.unpack x) dict of
     Just m  -> m
     Nothing -> M.empty
 
 
+------------------------------------------------------------------------
+-- Conversion
+------------------------------------------------------------------------
+
+
 -- | List dictionary lexical entries.
 entries :: Ord i => DAWG i a b -> [Lex i a b]
-entries = concatMap f . D.assocs where
+entries = concatMap f . DS.assocs where
     f (key, val) = unLexSet $ decode (T.pack key) val
 
 
 -- | Make dictionary from a list of (key, ID, entry info, form,
 -- entry\/form info) tuples.
 fromList :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> DAWG i a b
-fromList xs = D.fromListWith union $
-    [ ( T.unpack x
-      , M.singleton i (Val a (M.singleton (between x y) b)) )
-    | (x, i, a, y, b) <- xs ]
-  where
-    union = M.unionWith $ both const M.union
-    both f g (Val x y) (Val x' y') = Val (f x x') (g y y')
+fromList = freeze . foldl' (flip insert) empty
 
 
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
