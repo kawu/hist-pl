@@ -6,6 +6,7 @@
 
 import           Control.Applicative ((<$>))
 import           Control.Monad (void, forM_, (<=<))
+import           Control.Proxy
 import           System.Console.CmdArgs
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -107,7 +108,7 @@ exec Create{..} = do
     -- putStrLn "Reading historical dictionary of Polish..."
     hist <- LMF.readLMF lmfPath
     -- putStrLn "Creating the binary version of the dictionary..."
-    void $ H.build outPath (addForms poli hist)
+    runProxy $ fromListI (addForms poli hist) >-> H.save outPath
   where
     addForms poli hist =
         [ ( lexEntry
@@ -121,7 +122,7 @@ exec Create{..} = do
 
 exec Print{..} = do
     hpl <- H.open binPath
-    H.loadAll hpl >>= L.putStr . LMF.showLMF . map snd
+    runProxy $ H.load hpl >-> mapMD (L.putStrLn . LMF.showLexEntry . snd)
 
 
 exec Analyse{..} = do
@@ -145,3 +146,14 @@ exec Analyse{..} = do
             2   -> A.ForceShowCont
             _   -> A.ShowCont
         , A.showDefs = printDefs }
+
+
+---------------------------------------
+-- Misc
+---------------------------------------
+
+
+fromListI :: (Monad m, Proxy p) => [a] -> () -> Producer p (Maybe a) m r
+fromListI xs () = runIdentityP $ do
+    mapM_ (respond . Just) xs
+    forever $ respond Nothing

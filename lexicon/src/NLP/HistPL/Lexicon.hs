@@ -12,7 +12,7 @@
 
     > import qualified NLP.HistPL.Lexicon as H
    
-    Use `build` and `loadAll` functions to save/load
+    Use `save` and `load` functions to save/load
     the entire dictionary in/from a given directory.
    
     To search the dictionary, open the binary directory with an
@@ -66,8 +66,8 @@ module NLP.HistPL.Lexicon
 , loadI
 
 -- * Conversion
-, build
-, loadAll
+, save
+, load
 
 -- * Modules
 -- $modules
@@ -212,7 +212,7 @@ data HistPL = HistPL {
     }
 
 
--- | Code of a word form origin.  See the `build` function to
+-- | Code of a word form origin.  See the `save` function to
 -- learn why do we provide this information.
 data Code
     = Orig  -- ^ only from historical dictionary
@@ -327,32 +327,39 @@ lookupMany hpl xs = do
 
 -- | Construct dictionary from a list of lexical entries and save it in
 -- the given directory.  To each entry an additional set of forms can
--- be assigned.  
-build :: Proxy p => FilePath -> () -> Consumer p (LexEntry, S.Set T.Text) IO HistPL
-build binPath () = runIdentityP $ do
+-- be assigned.  The stream of entry pairs should be terminated by the
+-- `Nothing` value.
+save :: Proxy p => FilePath -> ()
+     -> Consumer p (Maybe (LexEntry, S.Set T.Text)) IO ()
+save binPath () = runIdentityP $ do
 
     -- Prepare directory for the dictionary.
     lift $ do
         createDirectoryIfMissing True binPath
         emptyDirectory binPath >>= \empty -> unless empty $ do
-            error $ "build: directory " ++ binPath ++ " is not empty"
+            error $ "save: directory " ++ binPath ++ " is not empty"
         createDirectory $ binPath </> entryDir
         createDirectory $ binPath </> keyDir
 
-    formMap <- fmap (D.freeze . fst) $
-      -- The first state component represents the `formMap` initializer.
-      -- The second component is used to compute keys for individual entries.
-        S.execStateP (D.empty, DM.empty) $ forever $ do
-            (entry, forms) <- request ()
-            key <- getKey entry
-            saveBin key entry forms
+    formMap <- S.evalStateP s0 loop
     lift $ encodeFile (binPath </> formFile) formMap
-    return $ HistPL binPath formMap
 
   where
 
-   -- Compute key of the entry.
-   getKey entry = do 
+    loop = request () >>= \x -> case x of
+        Nothing -> D.freeze . fst <$> S.get
+        Just (entry, forms) -> do
+            key <- getKey entry
+            saveBin key entry forms
+            loop
+    
+    -- Empty, initial state.  The first state component represents the
+    -- `formMap` initializer.  The second component is used to compute
+    -- keys for individual entries.
+    s0 = (D.empty, DM.empty)
+
+    -- Compute key of the entry.
+    getKey entry = do 
         km <- snd <$> S.get
         let main = proxy entry
             path = T.unpack main
@@ -361,8 +368,8 @@ build binPath () = runIdentityP $ do
         S.modify $ second $ DM.insert path num
         return key
 
-   -- Save binary entry on a disk and update the map of forms.
-   saveBin key entry otherForms = do
+    -- Save binary entry on a disk and update the map of forms.
+    saveBin key entry otherForms = do
         lift $ saveEntry binPath key entry
         let D.Key{..} = key
             histForms = S.fromList (Util.allForms entry)
@@ -373,9 +380,10 @@ build binPath () = runIdentityP $ do
             xs        = list Orig onlyHist
                      ++ list Copy onlyOther
                      ++ list Both both
+        -- TODO: Make it strict!
         S.modify $ first $ flip (foldl' (flip D.insert)) xs
 
 
 -- | Load all lexical entries in a lazy manner.
-loadAll :: Proxy p => HistPL -> () -> Producer p (Key, LexEntry) IO ()
-loadAll hpl = dictKeys hpl >-> mapMD (\x -> (x, ) <$> loadK hpl x)
+load :: Proxy p => HistPL -> () -> Producer p (Key, LexEntry) IO ()
+load hpl = dictKeys hpl >-> mapMD (\x -> (x, ) <$> loadK hpl x)
