@@ -10,8 +10,9 @@
   
   <body onload="init();">
     <div style="width:90%" class="centered">
+      <!--h2>Słownik dawnej polszczyzny</h2-->
+      <apply template="nav"/>
 
-      <h2>Słownik dawnej polszczyzny</h2>
       <hr><br>
 
       <div id="left_col">

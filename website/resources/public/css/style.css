@@ -1,3 +1,29 @@
+/* Navigation menu */
+
+#nav {
+  // text-align: center;
+  display: table;
+  width: 100%;
+  font-size: 20px;
+  // font-weight: normal;
+  // font-family: Helvetica,Arial,Verdana,sans-serif;
+  // font-style:normal;
+}
+#nav li {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+#nav li a {
+  padding: 5px;
+  text-decoration: none;
+  color: #BBBBBB;
+}
+
+#nav li a:hover {
+  color: #444444;
+}
+
 /* Lexical entry XML structure */
 
 pre.sourceCode { font-size: 100%; padding: 16px 16px 16px 32px; margin-top: 29px;}
