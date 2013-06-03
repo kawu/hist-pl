@@ -200,13 +200,20 @@ lexDefs entry =
     | sense <- H.senses entry ]
 
 
+----------------------------------
+-- Index handlers and splices
+----------------------------------
+
+
 -- | Index splice prints all entries with a specified prefix.
 listOutSplice :: Splice AppH
 listOutSplice = do
-    prefix <- maybe "NO PREFIX?" id <$> getParam "prefix"
-    return [X.TextNode $ T.decodeUtf8 prefix]
-
-
+    pref <- T.decodeUtf8 . maybe "" id <$> getParam "prefix"
+    hpl  <- gets _histPL
+    let n = H.withPrefix hpl pref
+    return
+        [ X.TextNode $ "Prefix: " `T.append` pref
+        , X.TextNode $ " Number of forms with the given prefix: " `T.append` T.pack (show n) ]
 
 
 ----------------------------------

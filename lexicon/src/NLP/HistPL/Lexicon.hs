@@ -56,8 +56,9 @@ module NLP.HistPL.Lexicon
 -- ** By Form
 , lookup
 , lookupMany
+-- ** By Prefix
+, nthSuffix
 , withPrefix
-, withPrefixNum
 -- ** By Key
 , dictKeys
 , tryLoadK
@@ -87,7 +88,6 @@ import qualified Control.Proxy.Trans.State as S
 import           System.FilePath ((</>))
 import           System.Directory
     ( createDirectoryIfMissing, createDirectory, doesDirectoryExist )
-import           Data.Maybe (catMaybes)
 import           Data.List (foldl')
 import           Data.Binary (Binary, put, get, encodeFile, decodeFile)
 import qualified Data.Set as S
@@ -325,20 +325,14 @@ lookupMany hpl xs = do
         | (base, code) <- M.toList (D.forms val) ]
 
 
--- | Produce all dictionary forms (starting from the `i`-th form)
--- with a given prefix.
-withPrefix :: HistPL -> T.Text -> Int -> [T.Text
-withPrefix HistPL{..} x i = catMaybes
-    [ T.append x <$> D.byIndex j fm
-    | j <- [i .. n - 1] ]
-  where
-    fm = D.submap x formMap
-    n  = D.size fm
+-- | Get suffix of the `i`-th form starting with a given prefix.
+nthSuffix :: HistPL -> T.Text -> Int -> Maybe T.Text
+nthSuffix HistPL{..} x i = D.byIndex i (D.submap x formMap)
 
 
 -- | Compute the number of entries with a given prefix.
-withPrefixNum :: HistPL -> T.Text -> Int
-withPrefixNum HistPL{..} x = D.size (D.submap x formMap)
+withPrefix :: HistPL -> T.Text -> Int
+withPrefix HistPL{..} x = D.size (D.submap x formMap)
 
 
 --------------------------------------------------------
@@ -363,7 +357,7 @@ save binPath () = runIdentityP $ do
         createDirectory $ binPath </> keyDir
 
     formMap <- S.evalStateP s0 loop
-    lift $ encodeFile (binPath </> formFile) formMap
+    lift $ encodeFile (binPath </> formFile) (D.weigh formMap)
 
   where
 
