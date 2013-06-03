@@ -60,7 +60,8 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
     modifyHeistState $ bindSplices
         [ ("lex-entry", lexSplice)
         , ("ana-input", anaInpSplice)
-        , ("ana-output", anaOutSplice) ]
+        , ("ana-output", anaOutSplice)
+        , ("list-output", listOutSplice) ]
     hp <- liftIO $ H.open binPath
     addRoutes [ ("hello", writeText "hello world")
               , ("echo", echoHandler)
@@ -197,6 +198,15 @@ lexDefs :: H.LexEntry -> [[T.Text]]
 lexDefs entry =
     [ concat [H.text x | x <- H.defs sense]
     | sense <- H.senses entry ]
+
+
+-- | Index splice prints all entries with a specified prefix.
+listOutSplice :: Splice AppH
+listOutSplice = do
+    prefix <- maybe "NO PREFIX?" id <$> getParam "prefix"
+    return [X.TextNode $ T.decodeUtf8 prefix]
+
+
 
 
 ----------------------------------

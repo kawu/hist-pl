@@ -103,7 +103,7 @@ code {
 
 /* "Znakuj" input button */
 
-input {
+#znakuj-button {
     border: none;
     width: 100px;
     font-size: 16px;
