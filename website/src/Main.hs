@@ -207,13 +207,40 @@ lexDefs entry =
 
 -- | Index splice prints all entries with a specified prefix.
 listOutSplice :: Splice AppH
-listOutSplice = do
-    pref <- T.decodeUtf8 . maybe "" id <$> getParam "prefix"
+listOutSplice = failLeft $ runEitherT $ listOut
+
+
+listOut :: EitherT [String] (HeistT AppH AppH) Template
+listOut = do
     hpl  <- gets _histPL
+    pref <- T.decodeUtf8 . maybe "" id <$> lift (getParam "prefix")
+    begM <- fmap T.decodeUtf8 <$> lift (getParam "beg")
+    beg  <- case begM of
+        Nothing -> return 0
+        Just x  -> tryRead ["Param @beg not a number"] (T.unpack x)
     let n = H.withPrefix hpl pref
-    return
-        [ X.TextNode $ "Prefix: " `T.append` pref
-        , X.TextNode $ " Number of forms with the given prefix: " `T.append` T.pack (show n) ]
+        info = X.TextNode $ "Liczba znalezionych form: " `T.append` T.pack (show n)
+        items = map mkItem $ catMaybes
+            [ T.append pref <$> H.nthSuffix hpl pref i
+            | i <- [beg .. min n (beg + showNum) - 1] ]
+    return $ [info, X.Element "ul" [] items] ++ next pref n beg
+  where
+    -- How many forms will be shown on one page.
+    showNum = 100
+    mkItem x = X.Element "li" [] [
+        X.Element "a" [("href", "../lex?form=" `T.append` x)] [X.TextNode x]
+        ]
+    next pref n beg
+        | beg + showNum < n = [ X.Element "a"
+            [("href", "../list?" `T.append` params)]
+            [X.TextNode ">>"] ]
+        | otherwise = []
+      where
+        params = buildParams
+            [ ("prefix", pref)
+            , ("beg", T.pack $ show $ beg + showNum) ]
+    buildParams = T.intercalate "&" . map ( \(x, y) ->
+        x `T.append` "=" `T.append` y )
 
 
 ----------------------------------
