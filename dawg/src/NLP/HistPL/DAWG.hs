@@ -28,13 +28,24 @@ module NLP.HistPL.DAWG
 
 -- * DAWG
 , DAWG
+
 -- ** Initialization
 , DAWG'Init
-, empty
+, DM.empty
 , insert
-, freeze
+, DS.freeze
+
 -- ** Query
 , lookup
+, submap
+
+-- ** Weight
+, DS.Weight
+, DS.weigh
+, DS.size
+, index
+, byIndex
+
 -- ** Conversion
 , fromList
 , toList
@@ -182,7 +193,7 @@ toListE (Lex Key{..} Val{..}) =
 
 -- | A dictionary parametrized over ID @i@, with info @a@ for every
 -- (key, i) pair and info @b@ for every (key, i, apply rule key) triple.
-type DAWG i a b = DS.DAWG Char () (Node i a b)
+type DAWG i a b = DS.DAWG Char DS.Weight (Node i a b)
 
 
 ------------------------------------------------------------------------
@@ -192,11 +203,6 @@ type DAWG i a b = DS.DAWG Char () (Node i a b)
 
 -- | A `DAWG` initialization structure (a dynamic DAWG).
 type DAWG'Init i a b = DM.DAWG Char (Node i a b)
-
-
--- | An empty `DAWG'Init`.
-empty :: (Ord i, Ord a, Ord b) => DAWG'Init i a b
-empty = DM.empty
 
 
 -- | Insert a (key, ID, entry info, form, entry\/form info) into a
@@ -214,11 +220,6 @@ insert (x, i, a, y, b) = DM.insertWith union
     both f g (Val x0 y0) (Val x1 y1) = Val (f x0 x1) (g y0 y1)
 
 
--- | Freeze the initializator.
-freeze :: DAWG'Init i a b -> DAWG i a b
-freeze = DS.freeze
-
-
 ------------------------------------------------------------------------
 -- Query 
 ------------------------------------------------------------------------
@@ -229,6 +230,23 @@ lookup :: Ord i => T.Text -> DAWG i a b -> LexSet i a b
 lookup x dict = decode x $ case DS.lookup (T.unpack x) dict of
     Just m  -> m
     Nothing -> M.empty
+
+
+-- | Return the sub-dictionary containing all keys beginning with a prefix.
+submap :: Ord i => T.Text -> DAWG i a b -> Maybe (DAWG i a b)
+submap x dict = DS.submap (T.unpack x) dict
+
+
+-- | Position in a set of all dictionary entries with respect
+-- to the lexicographic order.
+index :: T.Text -> DAWG i a b -> Maybe Int
+index x = DS.index (T.unpack x)
+
+
+-- | Find dictionary entry given its index with respect to the
+-- lexicographic order.
+byIndex :: Int -> DAWG i a b -> Maybe T.Text
+byIndex ix = fmap T.pack . DS.byIndex ix
 
 
 ------------------------------------------------------------------------
@@ -245,7 +263,7 @@ entries = concatMap f . DS.assocs where
 -- | Make dictionary from a list of (key, ID, entry info, form,
 -- entry\/form info) tuples.
 fromList :: (Ord i, Ord a, Ord b) => [(T.Text, i, a, T.Text, b)] -> DAWG i a b
-fromList = freeze . foldl' (flip insert) empty
+fromList = DS.weigh . DS.freeze . foldl' (flip insert) DM.empty
 
 
 -- | Transform dictionary back into the list of (key, ID, key\/ID info, elem,
