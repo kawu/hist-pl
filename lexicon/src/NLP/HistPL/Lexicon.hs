@@ -56,6 +56,8 @@ module NLP.HistPL.Lexicon
 -- ** By Form
 , lookup
 , lookupMany
+, withPrefix
+, withPrefixNum
 -- ** By Key
 , dictKeys
 , tryLoadK
@@ -85,6 +87,7 @@ import qualified Control.Proxy.Trans.State as S
 import           System.FilePath ((</>))
 import           System.Directory
     ( createDirectoryIfMissing, createDirectory, doesDirectoryExist )
+import           Data.Maybe (catMaybes)
 import           Data.List (foldl')
 import           Data.Binary (Binary, put, get, encodeFile, decodeFile)
 import qualified Data.Set as S
@@ -293,6 +296,7 @@ tryLoadI hpl i = B.tryLoad (dictPath hpl </> entryDir) i
 
 
 -- | Lookup the form in the dictionary.
+-- The resultant list constitutes a map from entries to `Code`s.
 lookup :: HistPL -> T.Text -> IO [(LexEntry, Code)]
 lookup hpl x = do
     let lexSet = D.lookup x (formMap hpl)
@@ -306,6 +310,7 @@ lookup hpl x = do
         
 
 -- | Lookup a set of forms in the dictionary.
+-- The resultant list constitutes a map from entries to `Code`s.
 lookupMany :: HistPL -> [T.Text] -> IO [(LexEntry, Code)]
 lookupMany hpl xs = do
     let keyMap = M.fromListWith min $
@@ -318,6 +323,22 @@ lookupMany hpl xs = do
     getCode (key, val) =
         [ (key { D.path = base }, code)
         | (base, code) <- M.toList (D.forms val) ]
+
+
+-- | Produce all dictionary forms (starting from the `i`-th form)
+-- with a given prefix.
+withPrefix :: HistPL -> T.Text -> Int -> [T.Text
+withPrefix HistPL{..} x i = catMaybes
+    [ T.append x <$> D.byIndex j fm
+    | j <- [i .. n - 1] ]
+  where
+    fm = D.submap x formMap
+    n  = D.size fm
+
+
+-- | Compute the number of entries with a given prefix.
+withPrefixNum :: HistPL -> T.Text -> Int
+withPrefixNum HistPL{..} x = D.size (D.submap x formMap)
 
 
 --------------------------------------------------------
@@ -384,6 +405,6 @@ save binPath () = runIdentityP $ do
         S.modify $ first $ flip (foldl' (flip D.insert)) xs
 
 
--- | Load all lexical entries in a lazy manner.
+-- | A producer of all dictionary entries.
 load :: Proxy p => HistPL -> () -> Producer p (Key, LexEntry) IO ()
 load hpl = dictKeys hpl >-> mapMD (\x -> (x, ) <$> loadK hpl x)

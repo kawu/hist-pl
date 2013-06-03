@@ -233,7 +233,7 @@ lookup x dict = decode x $ case DS.lookup (T.unpack x) dict of
 
 
 -- | Return the sub-dictionary containing all keys beginning with a prefix.
-submap :: Ord i => T.Text -> DAWG i a b -> Maybe (DAWG i a b)
+submap :: Ord i => T.Text -> DAWG i a b -> DAWG i a b
 submap x dict = DS.submap (T.unpack x) dict
 
 
