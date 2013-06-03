@@ -28,7 +28,6 @@ library
                     , directory
                     , filepath
                     , transformers
-                    , lazy-io >= 0.1 && < 0.2
                     , pipes >= 3.3 && < 3.4
                     , dawg >= 0.9 && < 0.10
                     , hist-pl-types >= 0.1 && < 0.2
