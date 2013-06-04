@@ -13,7 +13,7 @@ import           Snap.Snaplet.Heist
 import           Snap.Util.FileServe (serveDirectory)
 import           Heist
 import           Heist.Interpreted hiding (textSplice)
-import           Data.List (intercalate)
+import           Data.List (intercalate, intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as L
@@ -218,27 +218,58 @@ listOut = do
     beg  <- case begM of
         Nothing -> return 0
         Just x  -> tryRead ["Param @beg not a number"] (T.unpack x)
+
     let n = H.withPrefix hpl pref
         info = X.TextNode $ "Liczba znalezionych form: " `T.append` T.pack (show n)
         items = map mkItem $ catMaybes
             [ T.append pref <$> H.nthSuffix hpl pref i
             | i <- [beg .. min n (beg + showNum) - 1] ]
-    return $ [info, X.Element "ul" [] items] ++ next pref n beg
+
+    return
+        [ info
+        , prevNext pref n beg
+        , X.Element "ul" [] items
+        , prevNext pref n beg ]
+
   where
+
     -- How many forms will be shown on one page.
     showNum = 100
+
+    -- Make a list element from a form.
     mkItem x = X.Element "li" [] [
-        X.Element "a" [("href", "../lex?form=" `T.append` x)] [X.TextNode x]
+        X.Element "a" [("href", "../lex?form=" `T.append` x)]
+        [X.TextNode x]
         ]
+
+    -- Left/right links.
+    prevNext pref n beg = X.Element "div" [("id", "prev-next")]
+        $ intersperse (X.TextNode " | ")
+        $ prev pref beg ++ next pref n beg
+
+    -- Print "Poprzednie" link, if needed.
+    prev pref beg
+        | beg > 0 = [ X.Element "a"
+            [("href", "../list?" `T.append` params)]
+            [X.TextNode "Poprzednie"] ]
+        | otherwise = []
+      where
+        params = buildParams
+            [ ("prefix", pref)
+            , ("beg", T.pack $ show $ max (beg - showNum) 0) ]
+
+    -- Print "Następne" link, if needed.
     next pref n beg
         | beg + showNum < n = [ X.Element "a"
             [("href", "../list?" `T.append` params)]
-            [X.TextNode ">>"] ]
+            [X.TextNode "Następne"] ]
         | otherwise = []
       where
         params = buildParams
             [ ("prefix", pref)
             , ("beg", T.pack $ show $ beg + showNum) ]
+
+    -- Build URL parameters.
     buildParams = T.intercalate "&" . map ( \(x, y) ->
         x `T.append` "=" `T.append` y )
 

@@ -111,6 +111,12 @@ code {
     font-weight: bold;
 }
 
+/* Next/Previous links */
+
+#prev-next {
+    margin-top: 15px;
+}
+
 /* Misc */
 
 .centered { margin: 0 auto; }
