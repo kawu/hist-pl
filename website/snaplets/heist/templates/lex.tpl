@@ -5,6 +5,9 @@
     <link rel="stylesheet" href="/public/css/style.css">
   </head>
   <body>
-    <lex-entry/>
+    <div style="width:90%" class="centered">
+      <apply template="nav"/>
+      <lex-entry/>
+    </div>
   </body>
 </html>

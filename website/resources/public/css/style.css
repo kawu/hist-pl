@@ -82,6 +82,14 @@ code {
     white-space: pre-wrap;
 }
 
+
+/* Default links */
+
+a:visited {
+    text-decoration: none;
+    color: #0000FF;
+}
+
 /* Form links */
 
 .fl a:link {

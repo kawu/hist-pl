@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 
 module Main where
@@ -13,6 +14,7 @@ import           Snap.Snaplet.Heist
 import           Snap.Util.FileServe (serveDirectory)
 import           Heist
 import           Heist.Interpreted hiding (textSplice)
+import qualified Data.Map as M
 import           Data.List (intercalate, intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -77,7 +79,7 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
 
 -- | Show information about lexemes specified by an identifier or a form.
 lexSplice :: Splice AppH
-lexSplice = failLeft . runEitherT $ lexByID <|> lexByForm
+lexSplice = ignoreLeft . runEitherT $ lexByID <|> lexByForm
 
 
 -- | Show information about lexemes specified by a lexeme identifier.
@@ -113,13 +115,6 @@ lexByForm = do
                 H.Copy  -> "Possible interpretation (based on PoliMorf):"
                 _       -> "Historical interpretation:"
         return $ X.Element "h5" [] [X.TextNode h] : desc
-
-
--- | Fail on left value.
-failLeft :: Monad m => m (Either [String] b) -> m b
-failLeft m = m >>= \x -> case x of
-    Left es -> fail (intercalate ", " es)
-    Right y -> return y
 
 
 -- | Translate entry to a Heist template (a list of HTML nodes).
@@ -205,73 +200,119 @@ lexDefs entry =
 ----------------------------------
 
 
--- | Index splice prints all entries with a specified prefix.
-listOutSplice :: Splice AppH
-listOutSplice = failLeft $ runEitherT $ listOut
+-- | List subpage parameters. 
+data LParams = LParams
+    { pref  :: T.Text
+    , beg   :: Int
+    , form  :: T.Text }
 
 
-listOut :: EitherT [String] (HeistT AppH AppH) Template
-listOut = do
-    hpl  <- gets _histPL
-    pref <- T.decodeUtf8 . maybe "" id <$> lift (getParam "prefix")
-    begM <- fmap T.decodeUtf8 <$> lift (getParam "beg")
-    beg  <- case begM of
+-- | Parse query parameters.
+parseLParams :: Monad m => Params -> EitherT [String] m LParams
+parseLParams params = do
+    beg <- case lookupParam "beg" params of
         Nothing -> return 0
-        Just x  -> tryRead ["Param @beg not a number"] (T.unpack x)
+        Just x  -> tryRead ["Param @beg not a number"] (T.unpack $ T.decodeUtf8 x)
+    let pref = maybe "" T.decodeUtf8 $ lookupParam "prefix" params
+        form = maybe "" T.decodeUtf8 $ lookupParam "form" params
+    return $ LParams
+        { pref  = pref
+        , beg   = beg
+        , form  = form }
 
-    let n = H.withPrefix hpl pref
-        info = X.TextNode $ "Liczba znalezionych form: " `T.append` T.pack (show n)
-        items = map mkItem $ catMaybes
-            [ T.append pref <$> H.nthSuffix hpl pref i
-            | i <- [beg .. min n (beg + showNum) - 1] ]
 
-    return
-        [ info
-        , prevNext pref n beg
-        , X.Element "ul" [] items
-        , prevNext pref n beg ]
+-- | Show `LParams`.
+showLParams :: LParams -> T.Text
+showLParams LParams{..}
+    = T.cons '?' $ T.intercalate "&"
+    $ map (\(x, y) -> x `T.append` "=" `T.append` y)
+        [ ("prefix", pref)
+        , ("beg",  T.pack $ show beg)
+        , ("form", form) ]
+
+
+-- | List splice prints all entries with a specified prefix.
+listOutSplice :: Splice AppH
+listOutSplice = failLeft $ runEitherT $ do
+    params <- parseLParams =<< lift getQueryParams
+    hpl <- gets _histPL
+    return $ listTempl hpl params
+
+
+listTempl :: H.HistPL -> LParams -> Template
+listTempl hpl lp@LParams{..} =
+
+    [ X.TextNode $ "Liczba znalezionych form: " `T.append` T.pack (show n)
+    , prevNext
+    , X.Element "ul" [] $ map mkItem $ catMaybes
+        [ T.append pref <$> H.nthSuffix hpl pref i
+        | i <- [beg .. min n (beg + showNum) - 1] ]
+    , prevNext ]
 
   where
+
+    -- Number of entries with the prefix.
+    n = H.withPrefix hpl pref
 
     -- How many forms will be shown on one page.
     showNum = 100
 
     -- Make a list element from a form.
-    mkItem x = X.Element "li" [] [
-        X.Element "a" [("href", "../lex?form=" `T.append` x)]
-        [X.TextNode x]
-        ]
+    mkItem x = X.Element "li" [("class", "fl")]
+        [linkHere x $ \p -> p {form = x}]
 
     -- Left/right links.
-    prevNext pref n beg = X.Element "div" [("id", "prev-next")]
+    prevNext = X.Element "div" [("id", "prev-next")]
         $ intersperse (X.TextNode " | ")
-        $ prev pref beg ++ next pref n beg
+        $ prev ++ next
 
     -- Print "Poprzednie" link, if needed.
-    prev pref beg
-        | beg > 0 = [ X.Element "a"
-            [("href", "../list?" `T.append` params)]
-            [X.TextNode "Poprzednie"] ]
-        | otherwise = []
-      where
-        params = buildParams
-            [ ("prefix", pref)
-            , ("beg", T.pack $ show $ max (beg - showNum) 0) ]
+    prev | beg > 0 = [linkHere "Poprzednie" $ shiftBeg (-showNum)]
+         | otherwise = []
 
     -- Print "Następne" link, if needed.
-    next pref n beg
-        | beg + showNum < n = [ X.Element "a"
-            [("href", "../list?" `T.append` params)]
-            [X.TextNode "Następne"] ]
-        | otherwise = []
-      where
-        params = buildParams
-            [ ("prefix", pref)
-            , ("beg", T.pack $ show $ beg + showNum) ]
+    next | beg + showNum < n = [linkHere "Następne" $ shiftBeg showNum]
+         | otherwise = []
 
-    -- Build URL parameters.
-    buildParams = T.intercalate "&" . map ( \(x, y) ->
-        x `T.append` "=" `T.append` y )
+    -- Shift @beg URI parameter.
+    shiftBeg k p = p { beg = max (beg + k) 0 }
+
+    -- Link to this page with changed parameters.
+    linkHere x f = X.Element "a"
+        [("href", showLParams (f lp))]
+        [X.TextNode x]
+
+
+----------------------------------
+-- Handling error value
+----------------------------------
+
+
+-- | Fail on left value.
+failLeft :: Monad m => m (Either [String] b) -> m b
+failLeft m = m >>= \x -> case x of
+    Left es -> fail (intercalate ", " es)
+    Right y -> return y
+
+
+-- | Fail on left value.
+ignoreLeft :: Monad m => m (Either [String] Template) -> m Template
+ignoreLeft m = m >>= \x -> return $ case x of
+    Left _  -> []
+    Right y -> y
+
+
+----------------------------------
+-- Misc
+----------------------------------
+
+
+lookupParams :: Ord a => a -> M.Map a [b] -> [b]
+lookupParams x = maybe [] id . M.lookup x
+
+
+lookupParam :: Ord a => a -> M.Map a [b] -> Maybe b
+lookupParam x = listToMaybe . lookupParams x
 
 
 ----------------------------------

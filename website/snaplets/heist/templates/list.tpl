@@ -12,13 +12,18 @@
     <div style="width:90%" class="centered">
       <apply template="nav"/>
 
-      <form>
-      Wyszukaj formy rozpoczynające się na:
-      <input type="text" name="prefix">
-      <input type="submit" value="Szukaj">
-      </form>
+      <div id="left_col">
+        <form>
+        Wyszukaj formy rozpoczynające się na:
+        <input type="text" name="prefix">
+        <input type="submit" value="Szukaj">
+        </form>
+        <list-output/>
+      </div>
 
-      <list-output/>
+      <div id="right_col">
+        <lex-entry/>
+      </div>
 
     </div>
   </body>

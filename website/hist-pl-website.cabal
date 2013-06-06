@@ -35,7 +35,8 @@ executable hist-pl-website
     hist-pl-lmf               >= 0.1   && < 0.2,
     hist-pl                   >= 0.3   && < 0.4,
     pandoc                    >= 1.11  && < 1.12,
-    utf8-string               >= 0.3   && < 0.4
+    utf8-string               >= 0.3   && < 0.4,
+    containers
 
   if impl(ghc >= 6.12.0)
     ghc-options: -threaded -Wall -fwarn-tabs -funbox-strict-fields -O2
