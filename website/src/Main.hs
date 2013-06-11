@@ -85,7 +85,7 @@ lexByID = do
     lexID <- lift (getParam "id") >>= tryJust ["Param @id not specified"]
     entry <- liftIO (H.tryLoadI hpl $ T.decodeUtf8 lexID) >>=
         tryJust ["No etries with given @id"]
-    hoistEither $ lexToHTML entry
+    liftIO $ lexToHTML hpl entry
 
 
 -- | Show information about lexemes specified by a form.
@@ -95,20 +95,21 @@ lexByForm = do
     form <- T.decodeUtf8 <$> ( lift (getParam "form")
         >>= tryJust ["Param @form not specified"] )
     entries <- liftIO $ H.lookupMany hpl [form, T.toLower form]
-    hoistEither $ decorate entries
+    liftIO $ decorate hpl entries
   where
-    -- decorate xs = concat <$> mapM (lexToHTML . fst) xs
-    decorate xs = intercalate hr <$> mapM (lexToHTML . fst) xs
+    decorate hpl xs = intercalate hr <$> mapM (lexToHTML hpl . fst) xs
     hr = [X.Element "hr" [("class", "sep")] []]
 
 
 -- | Translate entry to a Heist template (a list of HTML nodes).
-lexToHTML :: H.LexEntry -> Either [String] Template
-lexToHTML entry = Right $ concat
-    [ [header]
-    , [forms]
-    , [senses]
-    , related ]
+lexToHTML :: H.HistPL -> H.LexEntry -> IO Template
+lexToHTML hpl entry = do
+    senses <- getSenses
+    return $ concat
+        [ [header]
+        , [forms]
+        , [senses]
+        , related ]
   where
 
     -- Header with base forms
@@ -125,24 +126,32 @@ lexToHTML entry = Right $ concat
         where xs = concatMap H.text $ H.forms entry
 
     -- Section with senses
-    senses = X.Element "div" [("class", "lex-senses")]
-        $ sensesHeader : sensesBody
+    getSenses = do
+        body <- sensesBody
+        return $ X.Element "div"
+            [("class", "lex-senses")]
+            $ sensesHeader : body
     sensesHeader = mkH "h3" "Znaczenia"
-    sensesBody 
-        | null xs   = [X.Element "i" [] [X.TextNode "Brak"]]
-        | otherwise = map (uncurry mkSense) $ zip [1 :: Int ..] xs
+    sensesBody
+        | null xs   = return [X.Element "i" [] [X.TextNode "Brak"]]
+        | otherwise = mapM (uncurry mkSense) $ zip [1 :: Int ..] xs
         where xs = H.senses entry
 
     -- Section with one sense
-    mkSense i x = X.Element "div" [("class", "lex-sense")]
-        [ senseHeader i x, senseBody x ]
+    mkSense i x = do
+        body <- senseBody x
+        return $ X.Element "div"
+            [("class", "lex-sense")]
+            [senseHeader i x, body]
     senseHeader i x = X.Element "h4" []
         $ X.TextNode (T.pack $ show i ++ ". ")
         : commas (concatMap H.text $ H.defs x)
         ++ style x
-    senseBody x = X.Element "ul" [] $
-        map (X.Element "li" [] . (:[]) . X.TextNode)
-            (concatMap H.text $ H.cxts x)
+    senseBody x = do
+        let cxts = concatMap H.text $ H.cxts x
+        xs <- mapM (anaSent hpl) cxts
+        return $ X.Element "ul" [] $
+            map (X.Element "li" []) xs
     style x
         | null xs   = []
         | otherwise = space : parens (commas xs)
@@ -183,27 +192,45 @@ anaOutSplice = do
     hpl <- gets _histPL
     raw <- maybe "" id <$> getPostParam "input"
     let input = T.filter (/='\r') (T.decodeUtf8 raw)
-        plug  = [X.Element "br" [] [], X.TextNode " "]
-    intercalate plug <$> mapM (anaLine hpl) (T.lines input)
-  where
-    anaLine hpl line = mapM (anaTok hpl) (A.tokenize line)
-    anaTok _ (Right o)  = return $
+        plug = [X.Element "br" [] [], X.TextNode " "]
+    intercalate plug <$> mapM (liftIO . anaSent hpl) (T.lines input)
+
+
+-- | Get a list of lexeme definitions.
+lexDefs :: H.LexEntry -> [[T.Text]]
+lexDefs entry =
+    [ concat [H.text x | x <- H.defs sense]
+    | sense <- H.senses entry ]
+
+
+----------------------------------
+-- Analysis functionality
+----------------------------------
+
+
+-- | Analyse sentence and return the result in a form of a template.
+anaSent :: H.HistPL -> T.Text -> IO Template
+anaSent hpl = mapM anaTok . A.tokenize where
+
+    anaTok (Right o)  = return $
         let n = X.TextNode (showOther o)
         in  X.Element "code" [] [n]
-    anaTok hpl (Left x) = do
-        t <- liftIO $ A.anaWord hpl x
+    anaTok (Left x) = do
+        t <- A.anaWord hpl x
         let n = X.Element "code" [] [X.TextNode x]
         return $ if hasHist t
             then addLink x (showTip t) n
             else n
+
     addLink x tip n =
         let xdiv = X.Element "span" [("class", "fl"), ("title", tip)]
             href = X.Element "a" [("href", "../lex?form=" `T.append` x)]
         in  xdiv [href [n]]
+
     showOther (A.Pun x)   = x
     showOther (A.Space x) = x
 
-    -- Does the token have any obvious historical interpretation?
+    -- -- Does the token have any obvious historical interpretation?
     -- hasEvidentHist tok = isJust $ find ((/=) H.Copy . snd) (A.hist tok)
 
     -- Does the token have any historical interpretation?
@@ -216,16 +243,10 @@ anaOutSplice = do
             (wrapBase $ baseForms entry)
             (showDefs $ lexDefs entry)
         | entry <- map fst $ A.hist tok ]
+
     baseForms  = H.text . H.lemma
     wrapBase x = "<<" `T.append` T.intercalate ", " x `T.append` ">>"
     showDefs   = T.concat . map (T.append "\n * " . T.intercalate ", ")
-
-
--- | Get a list of lexeme definitions.
-lexDefs :: H.LexEntry -> [[T.Text]]
-lexDefs entry =
-    [ concat [H.text x | x <- H.defs sense]
-    | sense <- H.senses entry ]
 
 
 ----------------------------------
