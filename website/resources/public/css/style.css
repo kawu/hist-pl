@@ -26,14 +26,14 @@
 
 /* Lexical entry XML structure */
 
-pre.sourceCode { font-size: 100%; padding: 16px 16px 16px 32px; margin-top: 29px;}
+/* pre.sourceCode { font-size: 100%; padding: 16px 16px 16px 32px; margin-top: 29px;}
 pre.sourceCode { }
 pre.sourceCode span.Normal { }
 pre.sourceCode span.Keyword, pre.sourceCode span.kw { font-weight: bold; } 
 pre.sourceCode span.String, pre.sourceCode span.st { font-weight: bold; } 
 pre.sourceCode span.String, pre.sourceCode span.st { color: green; }
 pre.sourceCode span.Comment, pre.sourceCode span.co { color: #999; font-style: italic; }
-pre.sourceCode span.Others { }
+pre.sourceCode span.Others { } */
 
 
 /* Two column layout */
@@ -125,6 +125,23 @@ a:visited {
     margin-top: 15px;
 }
 
+/* Headers */
+
+h2 {
+    // border-bottom-style: solid ; 
+    // border-bottom-color: #006600; 
+    // border-bottom-color: #ccc; 
+    // border-bottom-width: 5px;
+    font-style: italic;
+}
+
+h3 {
+    border-bottom-style: dotted ; 
+    // border-bottom-color: #006600; 
+    border-bottom-color: #ccc; 
+    // border-bottom-width: 5px;
+}
+
 /* Misc */
 
 .centered { margin: 0 auto; }
@@ -134,3 +151,17 @@ hr {
     background-color: #cccccc;
     height: 6px;
 }
+
+hr.sep {
+    margin-top: 23px;
+}
+
+/* hr.dots {
+    border: 0;
+    border-top: 1px dotted #cccccc;
+    // border-top: 1px dotted #f00;
+    // color: #cccccc;
+    background-color: #fff;
+    height: 1px;
+} */
+

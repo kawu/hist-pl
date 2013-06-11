@@ -97,42 +97,18 @@ lexByForm = do
     entries <- liftIO $ H.lookupMany hpl [form, T.toLower form]
     hoistEither $ decorate entries
   where
+    -- decorate xs = concat <$> mapM (lexToHTML . fst) xs
     decorate xs = intercalate hr <$> mapM (lexToHTML . fst) xs
-    hr = [X.Element "hr" [] []]
-
---     numInfo xs =
---         let n = T.pack $ show $ length xs
---             info = "Number of interpretations: " `T.append` n
---         in  X.Element "h3" [] [X.TextNode info]
---     decorateEntry (entry, _code) = do
---         desc <- lexToHTML entry
---         let h = case code of
---                 H.Copy  -> "Possible interpretation (based on PoliMorf):"
---                 _       -> "Historical interpretation:"
---         return $ X.Element "h5" [] [X.TextNode h] : desc
-
-
--- -- | Translate entry to a Heist template (a list of HTML nodes).
--- lexToHTML :: H.LexEntry -> Either [String] Template
--- lexToHTML entry
---     = both (:[]) X.docContent
---     $ X.parseHTML "-" (decorate entry)
---   where
---     both f _ (Left x)   = Left  (f x)
---     both _ g (Right x)  = Right (g x)
---     decorate = B.fromString
---         . Pandoc.writeHtmlString Pandoc.def
---         . Pandoc.readMarkdown Pandoc.def
---         . (\txt -> "~~~~~ {.xml}\n" ++ txt ++ "\n~~~~~\n")
---         . L.unpack . H.showLexEntry
+    hr = [X.Element "hr" [("class", "sep")] []]
 
 
 -- | Translate entry to a Heist template (a list of HTML nodes).
 lexToHTML :: H.LexEntry -> Either [String] Template
-lexToHTML entry = Right
-    [ header
-    , forms
-    , senses ]
+lexToHTML entry = Right $ concat
+    [ [header]
+    , [forms]
+    , [senses]
+    , related ]
   where
 
     -- Header with base forms
@@ -144,11 +120,9 @@ lexToHTML entry = Right
     forms = X.Element "div" [("class", "lex-forms")] $ formsHead : [formsBody]
     formsHead = mkH "h3" "Formy gramatyczne"
     formsBody
-        | null defs = X.Element "i" [] [X.TextNode "Brak"]
-        | otherwise = X.Element "span" [("class", "lex-forms-body")]
-            $ commas defs
-      where
-        defs = concatMap H.text $ H.forms entry
+        | null xs   = X.Element "i" [] [X.TextNode "Brak"]
+        | otherwise = X.Element "span" [("class", "lex-forms-body")] $ commas xs
+        where xs = concatMap H.text $ H.forms entry
 
     -- Section with senses
     senses = X.Element "div" [("class", "lex-senses")]
@@ -165,9 +139,24 @@ lexToHTML entry = Right
     senseHeader i x = X.Element "h4" []
         $ X.TextNode (T.pack $ show i ++ ". ")
         : commas (concatMap H.text $ H.defs x)
+        ++ style x
     senseBody x = X.Element "ul" [] $
         map (X.Element "li" [] . (:[]) . X.TextNode)
             (concatMap H.text $ H.cxts x)
+    style x
+        | null xs   = []
+        | otherwise = space : parens (commas xs)
+        where xs = H.style x
+
+    -- Section with related forms
+    related
+        | null xs   = []
+        | otherwise = [ X.Element "div" [("class", "lex-related")]
+            $ relHead : relBody ]
+      where
+        xs      = H.related entry
+        relHead = mkH "h3" "Formy pokrewne"
+        relBody = commas $ concatMap H.text xs
 
     -- Utilities
     commas    = intersperse (X.TextNode ", ") . map X.TextNode
