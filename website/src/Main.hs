@@ -18,13 +18,9 @@ import qualified Data.Map as M
 import           Data.List (intercalate, intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy as L
-import qualified Data.ByteString.UTF8 as B
 import qualified Text.XmlHtml as X
-import qualified Text.Pandoc as Pandoc
 
 import qualified NLP.HistPL.Lexicon as H
-import qualified NLP.HistPL.LMF as H
 import qualified NLP.HistPL.Analyse as A
 
 
@@ -101,35 +97,83 @@ lexByForm = do
     entries <- liftIO $ H.lookupMany hpl [form, T.toLower form]
     hoistEither $ decorate entries
   where
-    decorate xs = do
-        let h = numInfo xs
-        nodes <- concat <$> mapM decorateEntry xs
-        return $ h : nodes
-    numInfo xs =
-        let n = T.pack $ show $ length xs
-            info = "Number of interpretations: " `T.append` n
-        in  X.Element "h3" [] [X.TextNode info]
-    decorateEntry (entry, code) = do
-        desc <- lexToHTML entry
-        let h = case code of
-                H.Copy  -> "Possible interpretation (based on PoliMorf):"
-                _       -> "Historical interpretation:"
-        return $ X.Element "h5" [] [X.TextNode h] : desc
+    decorate xs = intercalate hr <$> mapM (lexToHTML . fst) xs
+    hr = [X.Element "hr" [] []]
+
+--     numInfo xs =
+--         let n = T.pack $ show $ length xs
+--             info = "Number of interpretations: " `T.append` n
+--         in  X.Element "h3" [] [X.TextNode info]
+--     decorateEntry (entry, _code) = do
+--         desc <- lexToHTML entry
+--         let h = case code of
+--                 H.Copy  -> "Possible interpretation (based on PoliMorf):"
+--                 _       -> "Historical interpretation:"
+--         return $ X.Element "h5" [] [X.TextNode h] : desc
+
+
+-- -- | Translate entry to a Heist template (a list of HTML nodes).
+-- lexToHTML :: H.LexEntry -> Either [String] Template
+-- lexToHTML entry
+--     = both (:[]) X.docContent
+--     $ X.parseHTML "-" (decorate entry)
+--   where
+--     both f _ (Left x)   = Left  (f x)
+--     both _ g (Right x)  = Right (g x)
+--     decorate = B.fromString
+--         . Pandoc.writeHtmlString Pandoc.def
+--         . Pandoc.readMarkdown Pandoc.def
+--         . (\txt -> "~~~~~ {.xml}\n" ++ txt ++ "\n~~~~~\n")
+--         . L.unpack . H.showLexEntry
 
 
 -- | Translate entry to a Heist template (a list of HTML nodes).
 lexToHTML :: H.LexEntry -> Either [String] Template
-lexToHTML entry
-    = both (:[]) X.docContent
-    $ X.parseHTML "-" (decorate entry)
+lexToHTML entry = Right
+    [ header
+    , forms
+    , senses ]
   where
-    both f _ (Left x)   = Left  (f x)
-    both _ g (Right x)  = Right (g x)
-    decorate = B.fromString
-        . Pandoc.writeHtmlString Pandoc.def
-        . Pandoc.readMarkdown Pandoc.def
-        . (\txt -> "~~~~~ {.xml}\n" ++ txt ++ "\n~~~~~\n")
-        . L.unpack . H.showLexEntry
+
+    -- Header with base forms
+    header = X.Element "h2" [] $ wrapBase ++ [space] ++ wrapPos
+    wrapBase  = commas $ H.text $ H.lemma entry
+    wrapPos   = parens $ commas $ H.pos entry
+
+    -- Section with forms
+    forms = X.Element "div" [("class", "lex-forms")] $ formsHead : [formsBody]
+    formsHead = mkH "h3" "Formy gramatyczne"
+    formsBody
+        | null defs = X.Element "i" [] [X.TextNode "Brak"]
+        | otherwise = X.Element "span" [("class", "lex-forms-body")]
+            $ commas defs
+      where
+        defs = concatMap H.text $ H.forms entry
+
+    -- Section with senses
+    senses = X.Element "div" [("class", "lex-senses")]
+        $ sensesHeader : sensesBody
+    sensesHeader = mkH "h3" "Znaczenia"
+    sensesBody 
+        | null xs   = [X.Element "i" [] [X.TextNode "Brak"]]
+        | otherwise = map (uncurry mkSense) $ zip [1 :: Int ..] xs
+        where xs = H.senses entry
+
+    -- Section with one sense
+    mkSense i x = X.Element "div" [("class", "lex-sense")]
+        [ senseHeader i x, senseBody x ]
+    senseHeader i x = X.Element "h4" []
+        $ X.TextNode (T.pack $ show i ++ ". ")
+        : commas (concatMap H.text $ H.defs x)
+    senseBody x = X.Element "ul" [] $
+        map (X.Element "li" [] . (:[]) . X.TextNode)
+            (concatMap H.text $ H.cxts x)
+
+    -- Utilities
+    commas    = intersperse (X.TextNode ", ") . map X.TextNode
+    parens xs = X.TextNode "(" : xs ++ [X.TextNode ")"]
+    space     = X.TextNode " "
+    mkH h x   = X.Element h [] [X.TextNode x]
 
 
 ----------------------------------
