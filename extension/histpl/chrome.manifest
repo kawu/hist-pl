@@ -1,0 +1,5 @@
+content   histpl                 chrome/content/
+skin      histpl   classic/1.0   chrome/skin/
+locale    histpl   en-US         chrome/locale/en-US/
+overlay	chrome://browser/content/browser.xul	chrome://histpl/content/ff-overlay.xul
+style	chrome://global/content/customizeToolbar.xul	chrome://histpl/skin/overlay.css
