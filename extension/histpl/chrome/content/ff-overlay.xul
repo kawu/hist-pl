@@ -6,37 +6,10 @@
   <stringbundleset id="stringbundleset">
     <stringbundle id="histpl-strings" src="chrome://histpl/locale/overlay.properties"/>
   </stringbundleset>
-  <toolbarpalette id="BrowserToolbarPalette">
-    <toolbarbutton id="histpl-toolbar-button" class="toolbarbutton-1 chromeclass-toolbar-additional"
-                   label="&histplToolbarButton.label;" tooltiptext="&histplToolbarButton.tooltip;"
-                   oncommand="histpl.onToolbarButtonCommand()"/>
-  </toolbarpalette>
   <popup id="contentAreaContextMenu">
     <menuitem id="context-histpl" label="&histplContext.label;"
               accesskey="&histplContext.accesskey;"
               insertafter="context-stop"
               oncommand="histpl.onMenuItemCommand(event)"/>
   </popup>
-  <menupopup id="menu_ToolsPopup">
-    <menuitem id="histpl-hello" label="&histpl.label;"
-              oncommand="histpl.onMenuItemCommand(event);"/>
-  </menupopup>
-  <menupopup id="viewSidebarMenu">
-    <menuitem observes="viewSidebar_histpl"/>
-  </menupopup>
-  <broadcasterset id="mainBroadcasterSet">
-    <broadcaster id="viewSidebar_histpl"
-                 label="&histplSidebar.label;"
-                 autoCheck="false"
-                 type="checkbox"
-                 group="sidebar"
-                 sidebarurl="chrome://histpl/content/ff-sidebar.xul"
-                 sidebartitle="&histplSidebar.label;"
-                 oncommand="toggleSidebar('viewSidebar_histpl');"/>
-  </broadcasterset>
-  <toolbox id="navigator-toolbox">
-    <toolbar class="chromeclass-toolbar" toolbarname="&histplToolbar.name;" customizable="true" id="histpl-toolbar">
-      <label value="&histplToolbar.label;"/>
-    </toolbar>
-  </toolbox>
 </overlay>
