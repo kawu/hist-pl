@@ -22,7 +22,7 @@
       </div>
 
       <div id="right_col">
-        <lex-entry/>
+        <list-entry/>
       </div>
 
     </div>
