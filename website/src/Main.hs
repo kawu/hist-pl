@@ -81,7 +81,9 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
 extSplice :: Splice AppH
 extSplice = do
     modify $ set mkRef $ T.append "/ext?query="
-    ignoreLeft . runEitherT $ extForm <|> extPhrase
+    showLeft "Query not found"
+        $ runEitherT
+        $ extForm <|> extPhrase
 
 
 -- | Show information about lexemes specified by a form.
@@ -103,6 +105,7 @@ extPhrase :: EitherT [String] (HeistT AppH AppH) Template
 extPhrase = do
     query <- T.decodeUtf8 <$> ( lift (getParam "query")
         >>= tryJust ["Param @query not specified"] )
+    tryAssert ["Query is phrase"] $ (>1) . length $ T.words query
     lift $ anaSent query
 
 
@@ -397,9 +400,16 @@ failLeft m = m >>= \x -> case x of
 
 
 -- | Fail on left value.
-ignoreLeft :: Monad m => m (Either [String] Template) -> m Template
+ignoreLeft :: Monad m => m (Either a Template) -> m Template
 ignoreLeft m = m >>= \x -> return $ case x of
     Left _  -> []
+    Right y -> y
+
+
+-- | Fail on left value and show the specifed error message.
+showLeft :: Monad m => T.Text -> m (Either a Template) -> m Template
+showLeft e m = m >>= \x -> return $ case x of
+    Left _  -> [X.TextNode e]
     Right y -> y
 
 
