@@ -1,3 +1,10 @@
+
+function openRequestedPopup(x) {
+    var winFeats = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no";
+    var address = "".concat("http://localhost:8000/ext?query=", x);
+    windowObjectReference = window.open(address, "HistPL", winFeats);
+}
+
 var histpl = {
   onLoad: function() {
     // initialization code
@@ -10,11 +17,12 @@ var histpl = {
     var sel = xpc.getSelection.call(xpc);
     // sel=dtip_jsObject.trimWhitespace(sel);
 
-    var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-                                  .getService(Components.interfaces.nsIPromptService);
-    promptService.alert(window, this.strings.getString("helloMessageTitle"),
-                                sel.toString());
-                                // this.strings.getString("helloMessage"));
+//     var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
+//                                   .getService(Components.interfaces.nsIPromptService);
+//     promptService.alert(window, this.strings.getString("helloMessageTitle"),
+//                                 sel.toString());
+//                                 // this.strings.getString("helloMessage"));
+    openRequestedPopup(sel.toString());
   },
 
   onToolbarButtonCommand: function(e) {
