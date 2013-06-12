@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="chrome://global/skin/"?>
 <?xml-stylesheet href="chrome://histpl/skin/hwin.css" type="text/css"?>
-<window id="hwin" title="HistPL"
+<window id="hwin" title="HistPL" height="480" width="360"
      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   <script src="hwin.js"/>
   <vbox flex="1">
