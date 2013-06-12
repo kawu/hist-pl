@@ -1,8 +1,12 @@
-
 function openRequestedPopup(x) {
-    var winFeats = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no";
-    var address = "".concat("http://localhost:8000/ext?query=", x);
-    windowObjectReference = window.open(address, "HistPL", winFeats);
+    // var winFeats = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,toolbar=yes";
+    // var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,height=480,width=320";
+    // var address = "".concat("http://localhost:8000/ext?query=", x);
+
+    var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes";
+    var address = "chrome://histpl/content/hwin.xul";
+
+    window.openDialog(address, "HistPL", winFeats, x);
 }
 
 var histpl = {
