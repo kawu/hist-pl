@@ -6,10 +6,15 @@ var histpl = {
   },
 
   onMenuItemCommand: function(e) {
+    var xpc = new XPCNativeWrapper(document.commandDispatcher.focusedWindow,"document","getSelection()");
+    var sel = xpc.getSelection.call(xpc);
+    // sel=dtip_jsObject.trimWhitespace(sel);
+
     var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
                                   .getService(Components.interfaces.nsIPromptService);
     promptService.alert(window, this.strings.getString("helloMessageTitle"),
-                                this.strings.getString("helloMessage"));
+                                sel.toString());
+                                // this.strings.getString("helloMessage"));
   },
 
   onToolbarButtonCommand: function(e) {

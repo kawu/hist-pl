@@ -9,7 +9,7 @@
   <popup id="contentAreaContextMenu">
     <menuitem id="context-histpl" label="&histplContext.label;"
               accesskey="&histplContext.accesskey;"
-              insertafter="context-stop"
+              insertbefore="context-viewpartialsource-selection"
               oncommand="histpl.onMenuItemCommand(event)"/>
   </popup>
 </overlay>

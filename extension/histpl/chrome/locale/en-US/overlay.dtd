@@ -1,6 +1,6 @@
 <!ENTITY histpl.label "Your localized menuitem">
-<!ENTITY histplContext.label "Your Menuitem">
-<!ENTITY histplContext.accesskey "Y">
+<!ENTITY histplContext.label "Search HistPL">
+<!ENTITY histplContext.accesskey "H">
 <!ENTITY histplToolbarButton.label "Your Toolbar Button">
 <!ENTITY histplToolbarButton.tooltip "This is your toolbar button!">
 <!ENTITY histplSidebar.label "Your Sidebar">
