@@ -18,9 +18,15 @@ import qualified Data.Map as M
 import           Data.List (intercalate, intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as L
 import qualified Text.XmlHtml as X
 
+-- Only to show LMF version
+import qualified Data.ByteString.UTF8 as B
+import qualified Text.Pandoc as Pandoc
+
 import qualified NLP.HistPL.Lexicon as H
+import qualified NLP.HistPL.LMF as H
 import qualified NLP.HistPL.Analyse as A
 
 
@@ -59,6 +65,7 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
     hs <- nestSnaplet "heist" heist $ heistInit "templates"
     modifyHeistState $ bindSplices
         [ ("lex-entry", lexSplice)
+        , ("lmf-entry", lmfSplice)
         , ("ana-input", anaInpSplice)
         , ("ana-output", anaOutSplice)
         , ("list-output", listOutSplice)
@@ -264,6 +271,36 @@ listTempl hpl lp@LParams{..} =
     linkHere x f = X.Element "a"
         [("href", showLParams (f lp))]
         [X.TextNode x]
+
+
+----------------------------------
+-- LMF splice
+----------------------------------
+
+
+-- | Show information about lexemes specified by an identifier or a form.
+lmfSplice :: Splice AppH
+lmfSplice = ignoreLeft . runEitherT $ do
+    hpl <- gets _histPL
+    lexID <- lift (getParam "id") >>= tryJust ["Param @id not specified"]
+    entry <- liftIO (H.tryLoadI hpl $ T.decodeUtf8 lexID) >>=
+        tryJust ["No etries with given @id"]
+    hoistEither $ lexToLMF entry
+
+
+-- | Translate entry to a Heist template (a list of HTML nodes).
+lexToLMF :: H.LexEntry -> Either [String] Template
+lexToLMF entry
+    = both (:[]) X.docContent
+    $ X.parseHTML "-" (decorate entry)
+  where
+    both f _ (Left x) = Left (f x)
+    both _ g (Right x) = Right (g x)
+    decorate = B.fromString
+        . Pandoc.writeHtmlString Pandoc.def
+        . Pandoc.readMarkdown Pandoc.def
+        . (\txt -> "~~~~~ {.xml}\n" ++ txt ++ "\n~~~~~\n")
+        . L.unpack . H.showLexEntry
 
 
 ----------------------------------
