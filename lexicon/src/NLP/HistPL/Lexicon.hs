@@ -204,9 +204,7 @@ tryLoadEntry path = maybeErr . loadEntry path
 --------------------------------------------------------
 
 
--- | A binary dictionary holds additional info of type @a@
--- for every entry and additional info of type @b@ for every
--- word form.
+-- | A binary version of the old Polish dictionary.
 data HistPL = HistPL {
     -- | A path to the binary dictionary.
       dictPath  :: FilePath
@@ -215,7 +213,7 @@ data HistPL = HistPL {
     }
 
 
--- | Code of a word form origin.  See the `save` function to
+-- | Code represents a word origin.  See the `save` function to
 -- learn why do we provide this information.
 data Code
     = Orig  -- ^ only from historical dictionary
