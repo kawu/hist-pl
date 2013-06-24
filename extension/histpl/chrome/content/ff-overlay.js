@@ -3,7 +3,7 @@ function openRequestedPopup(x) {
     // var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,height=480,width=320";
     // var address = "".concat("http://localhost:8000/ext?query=", x);
 
-    var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes";
+    var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,dependent=yes";
     var address = "chrome://histpl/content/hwin.xul";
 
     window.openDialog(address, "HistPL", winFeats, x);
