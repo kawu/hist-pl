@@ -1,7 +1,7 @@
 var hwin = {
   onLoad: function(x) {
     this.initialized = true;
-    var newUri = "".concat("http://glass.ipipan.waw.pl:10019/ext?query=", x);
+    var newUri = "".concat("http://glass.ipipan.waw.pl:10019/ext?query=", encodeURIComponent(x));
     var browser = document.getElementById('browser');
     browser.loadURI(newUri);
   }
