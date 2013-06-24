@@ -3,9 +3,9 @@
 
 // These are here as an example only. Please remove them or rename them to
 // something useful.
-pref("extensions.histpl.boolpref", false);
-pref("extensions.histpl.intpref", 0);
-pref("extensions.histpl.stringpref", "A string");
+pref("extensions.histpl.widthpref", 480);
+pref("extensions.histpl.heightpref", 480);
+pref("extensions.histpl.servicepref", "http://glass.ipipan.waw.pl:10019");
 
 // https://developer.mozilla.org/en/Localizing_extension_descriptions
 pref("extensions.histpl@waszczuk.kuba.pl.description", "chrome://histpl/locale/overlay.properties");

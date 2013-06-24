@@ -1,8 +1,8 @@
 <!ENTITY prefwindow.title "HistPL preferencje">
 <!ENTITY pane1.title "HistPL preferencje">
-<!ENTITY checkboolpref.label "A Boolean Preference">
-<!ENTITY checkboolpref.accesskey "B">
-<!ENTITY intpref.label "An Integer Preference">
-<!ENTITY intpref.accesskey "I">
-<!ENTITY stringpref.label "A String Preference">
-<!ENTITY stringpref.accesskey "S">
+<!ENTITY widthpref.label "Szerokość okna popup">
+<!ENTITY widthpref.accesskey "S">
+<!ENTITY heightpref.label "Wysokość okna popup">
+<!ENTITY heightpref.accesskey "W">
+<!ENTITY servicepref.label "Adres URL serwisu">
+<!ENTITY servicepref.accesskey "U">

@@ -4,12 +4,15 @@
 <prefwindow id="histpl-preferences" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" title="&prefwindow.title;">
   <prefpane id="pane1" label="&pane1.title;">
     <preferences>
-      <preference id="boolpref1" name="extensions.histpl.boolpref" type="bool"/>
-      <preference id="intpref1" name="extensions.histpl.intpref" type="int"/>
-      <preference id="stringpref1" name="extensions.histpl.stringpref" type="string"/> <!-- note that this is only an ASCII string - use unichar for unicode strings -->
+      <preference id="widthpref" name="extensions.histpl.widthpref" type="int"/>
+      <preference id="heightpref" name="extensions.histpl.heightpref" type="int"/>
+      <preference id="servicepref" name="extensions.histpl.servicepref" type="unichar"/>
     </preferences>
-    <checkbox id="checkboolpref" preference="boolpref1" label="&checkboolpref.label;" accesskey="&checkboolpref.accesskey;"/>
-    <label accesskey="&intpref.accesskey;" control="textintpref">&intpref.label;</label><textbox id="textintpref" preference="intpref1"/>
-    <label accesskey="&stringpref.accesskey;" control="textstringpref">&stringpref.label;</label><textbox id="textstringpref" preference="stringpref1"/>
+    <label accesskey="&widthpref.accesskey;" control="textwidthpref">&widthpref.label;</label>
+        <textbox id="textwidthpref" preference="widthpref"/>
+    <label accesskey="&heightpref.accesskey;" control="textheightpref">&heightpref.label;</label>
+        <textbox id="textheightpref" preference="heightpref"/>
+    <label accesskey="&servicepref.accesskey;" control="textservicepref">&servicepref.label;</label>
+        <textbox id="textservicepref" preference="servicepref"/>
   </prefpane>
 </prefwindow>
