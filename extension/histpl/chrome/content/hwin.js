@@ -4,6 +4,8 @@ var hwin = {
     var newUri = "".concat("http://glass.ipipan.waw.pl:10019/ext?query=", encodeURIComponent(x));
     var browser = document.getElementById('browser');
     browser.loadURI(newUri);
+    // document.getElementById('prev-button').disabled = !browser.canGoBack;
+    // document.getElementById('next-button').disabled = !browser.canGoForward;
   }
 };
 

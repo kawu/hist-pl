@@ -1,7 +1,6 @@
-button.next {
-    // border: 0px !important;
-    margin: 2px;
-}
-button.prev {
-    margin: 2px;
+button.arrow {
+    width:      40px;
+    min-width:  40px;
+    height:     40px;
+    margin:     4px;
 }
