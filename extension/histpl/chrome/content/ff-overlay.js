@@ -1,11 +1,8 @@
 function openRequestedPopup(x) {
     // var winFeats = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,toolbar=yes";
     // var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,height=480,width=320";
-    // var address = "".concat("http://localhost:8000/ext?query=", x);
-
     var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,dependent=yes";
     var address = "chrome://histpl/content/hwin.xul";
-
     window.openDialog(address, "HistPL", winFeats, x);
 }
 
@@ -14,6 +11,11 @@ var histpl = {
     // initialization code
     this.initialized = true;
     this.strings = document.getElementById("histpl-strings");
+
+    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                        .getService(Components.interfaces.nsIPrefService)
+                        .getBranch("extensions.histpl.");
+    prefs.setBoolPref("winon", false);
   },
 
   onMenuItemCommand: function(e) {
@@ -35,9 +37,6 @@ var histpl = {
   }
 };
 
-window.addEventListener("load", function () { histpl.onLoad(); }, false);
-
-
 histpl.onFirefoxLoad = function(event) {
   document.getElementById("contentAreaContextMenu")
           .addEventListener("popupshowing", function (e) {
@@ -50,4 +49,5 @@ histpl.showFirefoxContextMenu = function(event) {
   document.getElementById("context-histpl").hidden = gContextMenu.onImage;
 };
 
+window.addEventListener("load", function () { histpl.onLoad(); }, false);
 window.addEventListener("load", function () { histpl.onFirefoxLoad(); }, false);

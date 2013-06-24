@@ -6,7 +6,7 @@
     <preferences>
       <preference id="widthpref" name="extensions.histpl.widthpref" type="int"/>
       <preference id="heightpref" name="extensions.histpl.heightpref" type="int"/>
-      <preference id="servicepref" name="extensions.histpl.servicepref" type="unichar"/>
+      <preference id="servicepref" name="extensions.histpl.servicepref" type="string"/>
     </preferences>
     <label accesskey="&widthpref.accesskey;" control="textwidthpref">&widthpref.label;</label>
         <textbox id="textwidthpref" preference="widthpref"/>
