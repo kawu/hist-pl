@@ -1,4 +1,5 @@
 content   histpl                 chrome/content/
 skin      histpl   classic/1.0   chrome/skin/
 locale    histpl   en-US         chrome/locale/en-US/
+locale    histpl   pl-PL         chrome/locale/pl-PL/
 overlay	chrome://browser/content/browser.xul	chrome://histpl/content/ff-overlay.xul
