@@ -28,8 +28,8 @@ It is a standalone server, which can be run in the following way:
 Where `srpsdp.bin` is a binary version of the dictionary created
 with the help of the [hist-pl][hist-pl] tool.
 You need to run this command from the current, `website` directory,
-since the server uses templates and stylesheets located in the
-`resouces` and `snaplets` directories.
+since the server uses templates and style sheets located in the
+`resources` and `snaplets` directories.
 You can set a custom port using the `-p` argument:
 
     hist-pl-website srpsdp.bin -p 10017
@@ -40,8 +40,8 @@ Use `hist-pl-website --help` to see the list of all possible server
 parameters.
 
 
-Using with other dictionaires
-=============================
+Other dictionaries
+------------------
 
 It should be possible to use this service with any other dictionary
 representable in terms of the LMF meta-format. 
