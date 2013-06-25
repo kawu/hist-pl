@@ -44,8 +44,8 @@ Other dictionaries
 ------------------
 
 It should be possible to use this service with any other dictionary
-representable in terms of the LMF meta-format. 
-If you have a dictionary which implements the same subset of LMF
+representable in terms of the [LMF][lmf] meta-format. 
+If you have a dictionary which implements the same subset of [LMF][lmf]
 as the old Polish dictionary, you should be able to convert it to
 the binary form using the [hist-pl][hist-pl] command-line tool
 and run the `hist-pl-website`.
@@ -55,3 +55,4 @@ and run the `hist-pl-website`.
 [cabal]: http://www.haskell.org/cabal "Cabal"
 [haskell-platform]: http://www.haskell.org/platform "Haskell Platform"
 [hist-pl]: https://github.com/kawu/hist-pl/tree/master/umbrella#hist-pl "hist-pl"
+[lmf]: http://www.lexicalmarkupframework.org/ "Lexical Markup Framework"
