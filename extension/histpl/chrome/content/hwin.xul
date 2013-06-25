@@ -13,6 +13,10 @@
       <button id="next-button" class="arrow" tooltiptext="&histpl.nextArrow;"
         image="chrome://histpl/skin/icons/right-arrow/arrow_right.png"
         oncommand="hwinGoForward();"/>
+      <spacer flex="1"/>
+      <button id="exit-button" tooltiptext="&histpl.exit;"
+        image="chrome://histpl/skin/icons/exit/exit.png"
+        oncommand="window.close();"/>
     </hbox>
     <browser id="browser" type="content" tooltip="aHTMLTooltip" flex="1"/>
     <tooltip id="aHTMLTooltip" onpopupshowing="return FillInHTMLTooltip(document.tooltipNode);"/>
