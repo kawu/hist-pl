@@ -38,3 +38,37 @@ hwinGoForward = function () {
 
 var key = window.arguments[0];
 window.addEventListener("load", function () { hwin.onLoad(key); }, false);
+
+
+// Tooltip.
+function FillInHTMLTooltip(tipElement)
+{
+    const XLinkNS = "http://www.w3.org/1999/xlink";
+    var retVal = false;
+    var titleText = null;
+    var XLinkTitleText = null;
+
+    if (tipElement.namespaceURI == "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul")
+        return retVal;
+
+    while (!titleText && !XLinkTitleText && tipElement) {
+        if (tipElement.nodeType == Node.ELEMENT_NODE) {
+            titleText = tipElement.getAttribute("title");
+            XLinkTitleText = tipElement.getAttributeNS(XLinkNS, "title");
+        }
+        tipElement = tipElement.parentNode;
+    }
+    
+    var texts = [titleText, XLinkTitleText];
+    var tipNode = document.getElementById("aHTMLTooltip");
+    
+    for (var i = 0; i < texts.length; ++i) {
+        var t = texts[i];
+        if (t && t.search(/\S/) >= 0) {
+            tipNode.setAttribute("label", t);
+            retVal = true;
+        }
+    }
+    
+    return retVal;
+}

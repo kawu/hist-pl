@@ -13,6 +13,7 @@
         image="chrome://histpl/skin/right-arrow/16x16/arrow_right.png"
         oncommand="hwinGoForward();"/>
     </hbox>
-    <browser id="browser" type="content" flex="1"/>
+    <browser id="browser" type="content" tooltip="aHTMLTooltip" flex="1"/>
+    <tooltip id="aHTMLTooltip" onpopupshowing="return FillInHTMLTooltip(document.tooltipNode);"/>
   </vbox>
 </window>
