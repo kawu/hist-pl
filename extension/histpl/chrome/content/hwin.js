@@ -41,17 +41,17 @@ ableButtons = function () {
     var prevButton = document.getElementById('prev-button');
     prevButton.disabled = !browser.canGoBack;
     if (browser.canGoBack) {
-        prevButton.image = "chrome://histpl/skin/left-arrow/16x16/left.png";
+        prevButton.image = "chrome://histpl/skin/icons/left-arrow/left.png";
     } else {
-        prevButton.image = "chrome://histpl/skin/left-arrow/16x16/left_grey.png";
+        prevButton.image = "chrome://histpl/skin/icons/left-arrow/left_grey.png";
     }
 
     var nextButton = document.getElementById('next-button');
     nextButton.disabled = !browser.canGoForward;
     if (browser.canGoForward) {
-        nextButton.image = "chrome://histpl/skin/right-arrow/16x16/right.png";
+        nextButton.image = "chrome://histpl/skin/icons/right-arrow/right.png";
     } else {
-        nextButton.image = "chrome://histpl/skin/right-arrow/16x16/right_grey.png";
+        nextButton.image = "chrome://histpl/skin/icons/right-arrow/right_grey.png";
     }
 }
 

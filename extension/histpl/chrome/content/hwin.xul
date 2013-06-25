@@ -8,10 +8,10 @@
   <vbox flex="1">
     <hbox>
       <button id="prev-button" class="arrow" tooltiptext="&histpl.prevArrow;"
-        image="chrome://histpl/skin/left-arrow/16x16/left_grey.png"
+        image="chrome://histpl/skin/icons/left-arrow/left_grey.png"
         oncommand="hwinGoBack();"/>
       <button id="next-button" class="arrow" tooltiptext="&histpl.nextArrow;"
-        image="chrome://histpl/skin/right-arrow/16x16/arrow_right.png"
+        image="chrome://histpl/skin/icons/right-arrow/arrow_right.png"
         oncommand="hwinGoForward();"/>
     </hbox>
     <browser id="browser" type="content" tooltip="aHTMLTooltip" flex="1"/>

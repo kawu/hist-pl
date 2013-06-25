@@ -1,7 +1,7 @@
 function openRequestedPopup(x) {
     // var winFeats = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,toolbar=yes";
     // var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,height=480,width=320";
-    var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,dependent=yes";
+    var winFeats = "resizable=yes,scrollbars=yes,centerscreen=yes,chrome=yes,dependent=yes,titlebar=no";
     var address = "chrome://histpl/content/hwin.xul";
     window.openDialog(address, "HistPL", winFeats, x);
 }
