@@ -18,9 +18,7 @@ var hwin = {
         window.resizeTo(width, height);
     }
     prefs.setBoolPref("winon", true);
-
-    // document.getElementById('prev-button').disabled = !browser.canGoBack;
-    // document.getElementById('next-button').disabled = !browser.canGoForward;
+    browser.addEventListener("pageshow", function () { ableButtons(); }, false);
   }
 };
 
@@ -36,13 +34,29 @@ hwinGoForward = function () {
     browser.goForward();
 }
 
-var key = window.arguments[0];
-window.addEventListener("load", function () { hwin.onLoad(key); }, false);
+// Determine disability state of the next/prev buttons.
+ableButtons = function () {
+    var browser = document.getElementById('browser');
 
+    var prevButton = document.getElementById('prev-button');
+    prevButton.disabled = !browser.canGoBack;
+    if (browser.canGoBack) {
+        prevButton.image = "chrome://histpl/skin/left-arrow/16x16/left.png";
+    } else {
+        prevButton.image = "chrome://histpl/skin/left-arrow/16x16/left_grey.png";
+    }
+
+    var nextButton = document.getElementById('next-button');
+    nextButton.disabled = !browser.canGoForward;
+    if (browser.canGoForward) {
+        nextButton.image = "chrome://histpl/skin/right-arrow/16x16/right.png";
+    } else {
+        nextButton.image = "chrome://histpl/skin/right-arrow/16x16/right_grey.png";
+    }
+}
 
 // Tooltip.
-function FillInHTMLTooltip(tipElement)
-{
+function FillInHTMLTooltip(tipElement) {
     const XLinkNS = "http://www.w3.org/1999/xlink";
     var retVal = false;
     var titleText = null;
@@ -72,3 +86,12 @@ function FillInHTMLTooltip(tipElement)
     
     return retVal;
 }
+
+// Broser reload.
+function browserLoad(event) {
+    alert("Browser Load!");
+}
+
+// Initialization.
+var key = window.arguments[0];
+window.addEventListener("load", function () { hwin.onLoad(key); }, false);
