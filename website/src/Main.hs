@@ -32,12 +32,6 @@ import qualified NLP.HistPL.Transliter.Impact as I
 
 
 ----------------------------------
--- Configuration
-----------------------------------
-
--- TODO
-
-----------------------------------
 -- Application snaplet
 ----------------------------------
 
@@ -112,11 +106,11 @@ extForm = do
 -- | Annotate given query.
 extPhrase :: EitherT [String] (HeistT AppH AppH) Template
 extPhrase = do
-    query <- T.decodeUtf8 <$> ( lift (getParam "query")
+    query  <- T.decodeUtf8 <$> ( lift (getParam "query")
         >>= tryJust ["Param @query not specified"] )
     tryAssert ["Query is phrase"] $ (>1) . length $ T.words query
-    -- TODO: use param to determine if transliter.
-    lift $ (anaSent False) query    
+    trFlag <- maybe False (=="1") <$> lift (getParam "transliter")
+    lift $ anaSent trFlag query
 
 
 ----------------------------------
@@ -167,11 +161,11 @@ anaInpSplice = do
 -- | Analysis trbox splice.
 anaTrBoxSplice :: Splice AppH
 anaTrBoxSplice = do
-    trFlag <- maybe False (=="doit") <$> getPostParam "trbox"
+    trFlag <- maybe False (=="1") <$> getPostParam "transliter"
     let atts =
             [ ("type", "checkbox")
-            , ("name", "trbox")
-            , ("value", "doit") ] ++
+            , ("name", "transliter")
+            , ("value", "1") ] ++
             (if trFlag
                 then [("checked", "true")]
                 else [])
@@ -182,7 +176,7 @@ anaTrBoxSplice = do
 anaOutSplice :: Splice AppH
 anaOutSplice = do
     raw <- maybe "" id <$> getPostParam "input"
-    trFlag <- maybe False (=="doit") <$> getPostParam "trbox"
+    trFlag <- maybe False (=="1") <$> getPostParam "transliter"
     let input = T.filter (/='\r') (T.decodeUtf8 raw)
         plug = [X.Element "br" [] [], X.TextNode " "]
     intercalate plug <$> mapM (anaSent trFlag) (T.lines input)
