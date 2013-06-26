@@ -2,3 +2,5 @@
 <!ENTITY histpl.nextArrow "Do przodu">
 <!ENTITY histpl.exit "Zamknij">
 <!ENTITY histpl.prefs "Preferencje">
+<!ENTITY histpl.submit "Wyślij">
+<!ENTITY histpl.transliter "Transliteruj">

@@ -7,6 +7,7 @@
       <preference id="widthpref" name="extensions.histpl.widthpref" type="int"/>
       <preference id="heightpref" name="extensions.histpl.heightpref" type="int"/>
       <preference id="servicepref" name="extensions.histpl.servicepref" type="string"/>
+      <preference id="transliterpref" name="extensions.histpl.transliterpref" type="bool"/>
     </preferences>
     <label accesskey="&widthpref.accesskey;" control="textwidthpref">&widthpref.label;</label>
         <textbox id="textwidthpref" preference="widthpref"/>
@@ -14,5 +15,8 @@
         <textbox id="textheightpref" preference="heightpref"/>
     <label accesskey="&servicepref.accesskey;" control="textservicepref">&servicepref.label;</label>
         <textbox id="textservicepref" preference="servicepref"/>
+    <!-- Transliteration is controlled by the GUI -->
+    <!--label accesskey="&transliterpref.accesskey;" control="texttransliterpref">&transliterpref.label;</label-->
+        <!--textbox id="texttransliterpref" preference="transliterpref"/-->
   </prefpane>
 </prefwindow>

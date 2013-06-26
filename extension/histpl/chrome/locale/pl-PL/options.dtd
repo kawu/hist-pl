@@ -6,3 +6,5 @@
 <!ENTITY heightpref.accesskey "W">
 <!ENTITY servicepref.label "Adres URL serwisu">
 <!ENTITY servicepref.accesskey "U">
+<!ENTITY transliterpref.label "Transliteruj tekst (domyślnie)">
+<!ENTITY transliterpref.accesskey "T">

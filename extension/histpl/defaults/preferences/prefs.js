@@ -5,6 +5,7 @@
 pref("extensions.histpl.widthpref", 480);
 pref("extensions.histpl.heightpref", 480);
 pref("extensions.histpl.servicepref", "http://glass.ipipan.waw.pl:10019");
+pref("extensions.histpl.transliterpref", false);
 
 // Internal persistent variable -- is the popup window opened?
 pref("extensions.histpl.winon", false);

@@ -6,3 +6,5 @@
 <!ENTITY heightpref.accesskey "H">
 <!ENTITY servicepref.label "A service URL">
 <!ENTITY servicepref.accesskey "U">
+<!ENTITY transliterpref.label "Transliterate text (default behaviour)">
+<!ENTITY transliterpref.accesskey "T">

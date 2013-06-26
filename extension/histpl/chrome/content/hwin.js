@@ -1,26 +1,46 @@
 var hwin = {
   onLoad: function(x) {
     this.initialized = true;
-
-    // Setting proper address. 
     var prefs = Components.classes["@mozilla.org/preferences-service;1"]
                         .getService(Components.interfaces.nsIPrefService)
                         .getBranch("extensions.histpl.");
-    var uriBase = prefs.getCharPref("servicepref");
-    var newUri = "".concat(uriBase, "/ext?query=", encodeURIComponent(x));
-    var browser = document.getElementById('browser');
-    browser.loadURI(newUri);
-
     // Setting proper size attributes. 
     if (!prefs.getBoolPref("winon")) {
         var width  = prefs.getIntPref("widthpref");
         var height = prefs.getIntPref("heightpref");
         window.resizeTo(width, height);
     }
+    // Setting transliter checkbox.
+    var trbox = document.getElementById('transliter');
+    trbox.checked = prefs.getBoolPref('transliterpref');
+    // Set info, that the extension window is on.
     prefs.setBoolPref("winon", true);
+    // Add browser pageshow event.
+    var browser = document.getElementById('browser');
     browser.addEventListener("pageshow", function () { ableButtons(); }, false);
+    search(x);
   }
 };
+
+// Set the browser element to the particular query text.
+function search(x) {
+    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                        .getService(Components.interfaces.nsIPrefService)
+                        .getBranch("extensions.histpl.");
+    // Do we perform transliteration?
+    var trFlag = "0";
+    if (prefs.getBoolPref("transliterpref")) {
+        trFlag = "1";
+    }
+    // URI to the old Polish service.
+    var uri = "".concat(
+            prefs.getCharPref("servicepref"),
+            "/ext?transliter=", trFlag,
+            "&query=", encodeURIComponent(x));
+    var browser = document.getElementById('browser');
+    browser.loadURI(uri);
+}
+
 
 // Move the browser backward.
 hwinGoBack = function () {
@@ -104,7 +124,21 @@ function onClose() {
     window.close();
 }
 
+// When state of the transliteration checkbox changes.
+function transliterChange() {
+    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                    .getService(Components.interfaces.nsIPrefService)
+                    .getBranch("extensions.histpl.");
+    var trbox = document.getElementById('transliter');
+    prefs.setBoolPref('transliterpref', trbox.checked);
+}
+
+// Custom search.
+function findText() {
+    var text = document.getElementById('find-text').value;
+    search(text);
+}
+
 // Initialization.
 var key = window.arguments[0];
 window.addEventListener("load", function () { hwin.onLoad(key); }, false);
-window.addEventListener("close", function () { hwin.onClose(); }, false);
