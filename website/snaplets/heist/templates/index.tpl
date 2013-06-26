@@ -17,7 +17,11 @@
         <textarea placeholder="Wpisz tekst" id="input"
             name="input" rows="1" maxlength="100000"
             autofocus="autofocus"><ana-input/></textarea><br>
-        <br><input id="znakuj-button" type="submit" value="Znakuj"/>
+        <br>
+        <input id="znakuj-button" type="submit" value="Znakuj"/>
+        <span id="transliter-checkbox">
+            <input type="checkbox" name="transliter"/>Transliteruj
+        </span>
         </form>
       </div>
 

@@ -119,6 +119,13 @@ a:visited {
     font-weight: bold;
 }
 
+/* "Transliteruj" checkbox */
+
+#transliter-checkbox {
+    padding: 6px;
+    float: right;
+}
+
 /* Next/Previous links */
 
 #prev-next {
