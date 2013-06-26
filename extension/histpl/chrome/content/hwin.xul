@@ -14,9 +14,12 @@
         image="chrome://histpl/skin/icons/right-arrow/arrow_right.png"
         oncommand="hwinGoForward();"/>
       <titlebar flex="1"/>
+      <button id="prefs-button" tooltiptext="&histpl.prefs;"
+        image="chrome://histpl/skin/icons/prefs/prefs.png"
+        oncommand="openPrefs();"/>
       <button id="exit-button" tooltiptext="&histpl.exit;"
         image="chrome://histpl/skin/icons/exit/exit.png"
-        oncommand="window.close();"/>
+        oncommand="onClose();"/>
     </hbox>
     <browser id="browser" type="content" tooltip="aHTMLTooltip" flex="1"/>
     <tooltip id="aHTMLTooltip" onpopupshowing="return FillInHTMLTooltip(document.tooltipNode);"/>

@@ -87,11 +87,24 @@ function FillInHTMLTooltip(tipElement) {
     return retVal;
 }
 
-// Broser reload.
-function browserLoad(event) {
-    alert("Browser Load!");
+// Open preferences tab.
+function openPrefs() {
+    var win = Components.classes['@mozilla.org/appshell/window-mediator;1']
+                    .getService(Components.interfaces.nsIWindowMediator)
+                    .getMostRecentWindow('navigator:browser');
+    win.openUILinkIn('chrome://histpl/content/options.xul', 'tab');
+}
+
+// Code to run when closing the window.
+function onClose() {
+    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+                    .getService(Components.interfaces.nsIPrefService)
+                    .getBranch("extensions.histpl.");
+    prefs.setBoolPref("winon", false);
+    window.close();
 }
 
 // Initialization.
 var key = window.arguments[0];
 window.addEventListener("load", function () { hwin.onLoad(key); }, false);
+window.addEventListener("close", function () { hwin.onClose(); }, false);
