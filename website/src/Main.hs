@@ -28,6 +28,7 @@ import qualified Text.Pandoc as Pandoc
 import qualified NLP.HistPL.Lexicon as H
 import qualified NLP.HistPL.LMF as H
 import qualified NLP.HistPL.Analyse as A
+import qualified NLP.HistPL.Transliter.Impact as I
 
 
 ----------------------------------
@@ -67,6 +68,7 @@ appInit binPath = makeSnaplet "hist-pl" "HistPL" Nothing $ do
         [ ("lex-entry", lexSplice)
         , ("lmf-entry", lmfSplice)
         , ("ana-input", anaInpSplice)
+        , ("ana-trbox", anaTrBoxSplice)
         , ("ana-output", anaOutSplice)
         , ("list-output", listOutSplice)
         , ("list-entry", listEntrySplice)
@@ -113,7 +115,8 @@ extPhrase = do
     query <- T.decodeUtf8 <$> ( lift (getParam "query")
         >>= tryJust ["Param @query not specified"] )
     tryAssert ["Query is phrase"] $ (>1) . length $ T.words query
-    lift $ anaSent query
+    -- TODO: use param to determine if transliter.
+    lift $ (anaSent False) query    
 
 
 ----------------------------------
@@ -161,13 +164,28 @@ anaInpSplice = do
     return [X.TextNode $ T.decodeUtf8 input]
 
 
+-- | Analysis trbox splice.
+anaTrBoxSplice :: Splice AppH
+anaTrBoxSplice = do
+    trFlag <- maybe False (=="doit") <$> getPostParam "trbox"
+    let atts =
+            [ ("type", "checkbox")
+            , ("name", "trbox")
+            , ("value", "doit") ] ++
+            (if trFlag
+                then [("checked", "true")]
+                else [])
+    return [X.Element "input" atts []]
+
+
 -- | Analysis output splice.
 anaOutSplice :: Splice AppH
 anaOutSplice = do
     raw <- maybe "" id <$> getPostParam "input"
+    trFlag <- maybe False (=="doit") <$> getPostParam "trbox"
     let input = T.filter (/='\r') (T.decodeUtf8 raw)
         plug = [X.Element "br" [] [], X.TextNode " "]
-    intercalate plug <$> mapM anaSent (T.lines input)
+    intercalate plug <$> mapM (anaSent trFlag) (T.lines input)
 
 
 -- | Get a list of lexeme definitions.
@@ -309,13 +327,19 @@ lexToLMF entry
 
 
 -- | Analyse sentence and return the result in a form of a template.
-anaSent :: T.Text -> Splice AppH
-anaSent = mapM anaTok . A.tokenize where
+-- The first argument determines, if the text should be translitered
+-- first.
+anaSent :: Bool -> T.Text -> Splice AppH
+anaSent transFlag = mapM anaTok . A.tokenize where
+
+    trans | transFlag = T.pack . I.transliter I.impactRules . T.unpack
+          | otherwise = id
 
     anaTok (Right o)  = return $
         let n = X.TextNode (showOther o)
         in  X.Element "code" [] [n]
-    anaTok (Left x) = do
+    anaTok (Left x')  = do
+        let x = trans x'
         hpl <- gets _histPL
         t   <- liftIO $ A.anaWord hpl x
         let n = X.Element "code" [] [X.TextNode x]
@@ -399,7 +423,7 @@ lexToHTML entry = do
         ++ style x
     senseBody x = do
         let cxts = concatMap H.text $ H.cxts x
-        xs <- mapM anaSent cxts
+        xs <- mapM (anaSent False) cxts
         return $ X.Element "ul" [] $
             map (X.Element "li" []) xs
     style x

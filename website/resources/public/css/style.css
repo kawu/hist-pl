@@ -121,7 +121,7 @@ a:visited {
 
 /* "Transliteruj" checkbox */
 
-#transliter-checkbox {
+#transliter-span {
     padding: 6px;
     float: right;
 }

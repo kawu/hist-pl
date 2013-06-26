@@ -19,8 +19,8 @@
             autofocus="autofocus"><ana-input/></textarea><br>
         <br>
         <input id="znakuj-button" type="submit" value="Znakuj"/>
-        <span id="transliter-checkbox">
-            <input type="checkbox" name="transliter"/>Transliteruj
+        <span id="transliter-span">
+            <ana-trbox/>Transliteruj
         </span>
         </form>
       </div>
