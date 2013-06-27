@@ -1,10 +1,10 @@
 <!ENTITY prefwindow.title "HistPL preferences">
 <!ENTITY pane1.title "HistPL preferences">
-<!ENTITY widthpref.label "A popup width">
+<!ENTITY widthpref.label "A pop-up width">
 <!ENTITY widthpref.accesskey "W">
-<!ENTITY heightpref.label "A popup height">
+<!ENTITY heightpref.label "A pop-up height">
 <!ENTITY heightpref.accesskey "H">
 <!ENTITY servicepref.label "A service URL">
 <!ENTITY servicepref.accesskey "U">
-<!ENTITY transliterpref.label "Transliterate text (default behaviour)">
+<!ENTITY transliterpref.label "Transliterate input text">
 <!ENTITY transliterpref.accesskey "T">

@@ -1,10 +1,10 @@
 <!ENTITY prefwindow.title "HistPL preferencje">
 <!ENTITY pane1.title "HistPL preferencje">
-<!ENTITY widthpref.label "Szerokość okna popup">
+<!ENTITY widthpref.label "Szerokość okna pop-up">
 <!ENTITY widthpref.accesskey "S">
-<!ENTITY heightpref.label "Wysokość okna popup">
+<!ENTITY heightpref.label "Wysokość okna pop-up">
 <!ENTITY heightpref.accesskey "W">
-<!ENTITY servicepref.label "Adres URL serwisu">
-<!ENTITY servicepref.accesskey "U">
-<!ENTITY transliterpref.label "Transliteruj tekst (domyślnie)">
+<!ENTITY servicepref.label "Adres serwisu słownikowego">
+<!ENTITY servicepref.accesskey "A">
+<!ENTITY transliterpref.label "Transliteruj tekst wejściowy">
 <!ENTITY transliterpref.accesskey "T">

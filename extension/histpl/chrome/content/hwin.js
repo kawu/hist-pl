@@ -10,9 +10,9 @@ var hwin = {
         var height = prefs.getIntPref("heightpref");
         window.resizeTo(width, height);
     }
-    // Setting transliter checkbox.
-    var trbox = document.getElementById('transliter');
-    trbox.checked = prefs.getBoolPref('transliterpref');
+//     // Setting transliter checkbox.
+//     var trbox = document.getElementById('transliter');
+//     trbox.checked = prefs.getBoolPref('transliterpref');
     // Set info, that the extension window is on.
     prefs.setBoolPref("winon", true);
     // Add browser pageshow event.
@@ -124,14 +124,14 @@ function onClose() {
     window.close();
 }
 
-// When state of the transliteration checkbox changes.
-function transliterChange() {
-    var prefs = Components.classes["@mozilla.org/preferences-service;1"]
-                    .getService(Components.interfaces.nsIPrefService)
-                    .getBranch("extensions.histpl.");
-    var trbox = document.getElementById('transliter');
-    prefs.setBoolPref('transliterpref', trbox.checked);
-}
+// // When state of the transliteration checkbox changes.
+// function transliterChange() {
+//     var prefs = Components.classes["@mozilla.org/preferences-service;1"]
+//                     .getService(Components.interfaces.nsIPrefService)
+//                     .getBranch("extensions.histpl.");
+//     var trbox = document.getElementById('transliter');
+//     prefs.setBoolPref('transliterpref', trbox.checked);
+// }
 
 // Custom search.
 function findText() {

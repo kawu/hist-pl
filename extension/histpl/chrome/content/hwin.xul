@@ -24,12 +24,14 @@
     <browser id="browser" type="content" tooltip="aHTMLTooltip" flex="1"/>
     <tooltip id="aHTMLTooltip" onpopupshowing="return FillInHTMLTooltip(document.tooltipNode);"/>
     <hbox>
-      <button id="find-button" tooltiptext="&histpl.submit;"
-        label="&histpl.submit;" oncommand="findText();"/>
+      <!--textbox id="find-text" multiline="true" flex="1"/-->
       <textbox id="find-text" flex="1"/>
-      <checkbox id="transliter"
+      <button id="find-button" tooltiptext="&histpl.submit;"
+        accesskey="&histpl.submit.accesskey;"
+        label="&histpl.submit;" oncommand="findText();"/>
+      <!--checkbox id="transliter"
         oncommand="transliterChange();"
-        label="&histpl.transliter;"/>
+        label="&histpl.transliter;"/-->
     </hbox>
   </vbox>
 </window>

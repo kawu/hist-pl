@@ -2,5 +2,6 @@
 <!ENTITY histpl.nextArrow "Go forward">
 <!ENTITY histpl.exit "Exit">
 <!ENTITY histpl.prefs "Preferences">
-<!ENTITY histpl.submit "Submit">
 <!ENTITY histpl.transliter "Transliterate">
+<!ENTITY histpl.submit "Submit">
+<!ENTITY histpl.submit.accesskey "S">
