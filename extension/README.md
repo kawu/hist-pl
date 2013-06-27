@@ -13,9 +13,3 @@ the add-ons search) install the add-on from the `histpl.xpi` archive.
     
 
 [firefox]: http://www.mozilla.org/firefox "Firefox"
-
-
-TODO
-====
-
-* Submit the query phrase, when <enter> is hit.

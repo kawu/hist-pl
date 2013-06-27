@@ -133,6 +133,13 @@ function onClose() {
 //     prefs.setBoolPref('transliterpref', trbox.checked);
 // }
 
+// Handle enter event. 
+function capEnterKey(aEvent) {
+    if (aEvent.keyCode == KeyEvent.DOM_VK_RETURN) {
+        findText();
+    }
+}
+
 // Custom search.
 function findText() {
     var text = document.getElementById('find-text').value;

@@ -25,7 +25,7 @@
     <tooltip id="aHTMLTooltip" onpopupshowing="return FillInHTMLTooltip(document.tooltipNode);"/>
     <hbox>
       <!--textbox id="find-text" multiline="true" flex="1"/-->
-      <textbox id="find-text" flex="1"/>
+      <textbox id="find-text" onkeypress="capEnterKey(event);" flex="1"/>
       <button id="find-button" tooltiptext="&histpl.submit;"
         accesskey="&histpl.submit.accesskey;"
         label="&histpl.submit;" oncommand="findText();"/>
