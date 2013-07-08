@@ -33,3 +33,42 @@ documents to which only one work (according to the CSV file)
 is assigned in the directory hierarchy.
 You can run it using the following command:
 
+    runhaskell move_simple.hs source-dir meta.csv dest-dir
+
+where `source-dir` is a source directory with historical documents,
+`meta.csv` is a CSV file, and `dest-dir` is a destination directory
+to which the documents will be copied.
+
+
+move-compound
+=============
+
+The `move-compound` script can be used to move and rename all
+documents in which more than one work is stored.
+
+    runhaskell move_compound.hs source-dir meta.csv source-sub-path dest-dir
+
+where `source-sub-path` is a path (written using the Windows
+convention) to a particular compound document in the `source-dir`
+directory.  Use the `move-simple` command to see which documents
+are compound.
+
+
+rm-prefs
+========
+
+The list of documents created by the `move-compound` command
+are prefixed with a "cutting-point" position.
+The reason behind this behaviour is that we want to be able
+to browse through the set of created files in order consistent
+with the original, compund document.
+
+To remove prefixed from individual files, use the `rm-prefs`
+command:
+
+    runhaskell rm_prefs.hs dest-dir-prefs dest-dir
+
+where `dest-dir-prefs` is a directory with a list of documents
+obtained using the `move-compund` command and `dest-dir` is a
+directory where the resulting documents -- with prefixes removed
+-- will be put.
