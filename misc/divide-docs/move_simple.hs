@@ -16,8 +16,6 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import Debug.Trace (trace)
-
 -- | Word ID.
 type ID = String
 

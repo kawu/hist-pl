@@ -72,3 +72,15 @@ where `dest-dir-prefs` is a directory with a list of documents
 obtained using the `move-compund` command and `dest-dir` is a
 directory where the resulting documents -- with prefixes removed
 -- will be put.
+
+
+check-consistent
+================
+
+To check consistensy between the CSV file and the resulting
+directory of ID-named documents, use the following command:
+
+    runhaskell check_consistent.hs divided meta.csv
+
+where `meta.csv` is the CSV file and `divided` is a directory
+obtained by using the tools desribed above.
