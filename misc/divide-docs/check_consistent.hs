@@ -46,7 +46,7 @@ checkDocId
     -> FilePath     -- CSV file
     -> IO ()
 checkDocId rootPath csvPath = do
-    putStrLn "# ID -> Path"
+    putStrLn "# Path -> ID"
     idSet <- mkIdSet . Csv.decode True <$> BL.readFile csvPath
     files <- filesIn rootPath
     F.forM_ files $ \workID -> do
