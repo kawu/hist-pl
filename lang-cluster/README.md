@@ -50,14 +50,14 @@ For a given metric, the Eps parameter (size of a relevant
 neighborhood) can be determined on the basis of an existing
 clustering of the contemporary Polish language (or, to be more
 precise, the clustering present in the morphological dictionary
-for Polish, PoliMorf).  Think about it.
+of Polish, PoliMorf).  Think about it.
 
 
 TODO
 ====
 
 * Currently, the "dawg" and "adict" libraries are separate.
-  The "adict" library should be build on top of the "dawg"
+  The "adict" library should be built on top of the "dawg"
   library and use its DAWG representation of an automaton
   dictionary.
 
@@ -67,4 +67,4 @@ Possible extensions
 
 * Use a more general, parametric version of the string metric.
   Remember, that -- due to the usage of DBSCAN clustering method
-  -- it has to be a real metric.
+  -- it has to be a real metric!
