@@ -23,7 +23,7 @@ interest to us:
   search for the best set of parameter values with respect to
   a given clustering (e.g. of the contemporary Polish language).
 
-We start with the first problem, because it should lead us to a
+We start with the first problem -- it should lead us to a
 reasonable form of the parametric edit distance function.
 
 
