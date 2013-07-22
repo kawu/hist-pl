@@ -3,7 +3,7 @@ Language clustering
 
 This program is under construction.
 It is meant to perform automatic clustering of a language
-(a set of words) into individual lexucal units.
+(a set of words) into individual lexical units.
 
 
 Problem description
