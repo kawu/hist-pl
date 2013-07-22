@@ -1,11 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 
 
-import           Control.Applicative ((<$>), (<*>))
+import           Control.Applicative (pure, (<$>), (<*>))
 import           Control.Monad (forM_)
 import           Data.Maybe (catMaybes, maybeToList)
-import           Data.List (sortBy)
-import qualified Data.IntDisjointSet as DS
+import           Data.List (sort)
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.IO as L
@@ -14,6 +13,7 @@ import           Data.Ord (comparing)
 import qualified Data.PoliMorf as P
 import qualified Data.DAWG.Static as D
 import qualified NLP.Adict as A
+import qualified DisjointSet as DS
 
 
 -- | DBSCAN implementation.
@@ -21,10 +21,10 @@ dbscan
     :: Int                  -- ^ Minimum number of points required
                             --   to form a cluster
     -> (Int -> [Int])       -- ^ Eps-neighborhood of a particular element
-    -> [Int]                -- ^ Input elements
-    -> DS.IntDisjointSet    -- ^ Resulting clustering
-dbscan minPts epsNei xs =
-    DS.fromList $ concat [ neiRel x | x <- xs ]
+    -> Int                  -- ^ Input elements of the {0..k-1} form
+    -> DS.DisjSet           -- ^ Resulting clustering
+dbscan minPts epsNei k =
+    DS.fromList k $ concat [ neiRel x | x <- [0..k-1] ]
   where
     neiRel x = atLeast minPts [(x, y) | y <- epsNei x]
     atLeast k ys = if length ys >= k
@@ -44,12 +44,14 @@ data Conf = Conf {
 
 -- | Cluster the input set w.r.t. the DBSCAN configuration
 -- and the given cost function.
--- cluster :: Conf -> A.Cost Char -> [String] -> [(String, [String])]
 cluster :: Conf -> [String] -> [(String, String)]
-cluster Conf{..} xs = sortBy (comparing fst) $ map swap $ catMaybes
-    [ (,) <$> D.byIndex i dawg
-          <*> (lookFor i disj >>= flip D.byIndex dawg)
-    | i <- [0 .. D.size dawg - 1] ]
+cluster Conf{..} xs
+    = catMaybes $ map (\(i, j) ->
+        (,) <$> byID i <*> byID j)
+    $ sort $ catMaybes
+        -- [ (,) <$> eqCls i <*>  pure i
+        [ (,) <$> pure i <*>  pure i
+        | i <- [0 .. D.size dawg - 1] ]
   where
     -- Convert input to weighted DAWG
     dawg = D.weigh (D.fromLang xs)
@@ -60,9 +62,11 @@ cluster Conf{..} xs = sortBy (comparing fst) $ map swap $ catMaybes
         | x <- maybeToList (D.byIndex i dawg)
         , y <- A.findAll cost eps (V.fromList x) dawg ]
     -- Run DBSCAN on DAWG elements (or rather, their identifiers).
-    disj = dbscan minPts epsNei [0 .. D.size dawg - 1]
-    -- Look for an equivalent class of the given element.
-    lookFor i = fst . DS.lookup i
+    disj = dbscan minPts epsNei (D.size dawg)
+    -- Look for an equivalent class element of the given element.
+    eqCls = flip DS.lookup disj
+    -- Retrive word given its DAWG index.
+    byID = flip D.byIndex dawg
     -- First element of a triple.
     _1 (x, _, _) = x
     -- Swap pair elements.

@@ -23,9 +23,9 @@ executable lang-cluster
     dawg            >= 0.11     && < 0.12,
     adict           >= 0.4      && < 0.5,
     polimorf        >= 0.7.3    && < 0.8,
-    disjoint-set    >= 0.2      && < 0.3,
     vector          >= 0.10     && < 0.11,
-    text            >= 0.11     && < 0.12
+    text            >= 0.11     && < 0.12,
+    transformers    >= 0.3      && < 0.4
 
 source-repository head
     type: git
