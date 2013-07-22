@@ -1,0 +1,32 @@
+name:               lang-cluster
+version:            0.1.0
+synopsis:           Language clustering
+description:
+    Language clustering
+license:            BSD3
+license-file:       LICENSE
+cabal-version:      >= 1.6
+copyright:          Copyright (c) 2013 IPI PAN
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/hist-pl/tree/master/lang-cluster
+build-type:         Simple
+
+executable lang-cluster
+  hs-source-dirs: src
+  main-is: Main.hs
+
+  build-depends:
+    base            >= 4        && < 5,
+    dawg            >= 0.11     && < 0.12,
+    adict           >= 0.4      && < 0.5,
+    polimorf        >= 0.7.3    && < 0.8,
+    disjoint-set    >= 0.2      && < 0.3,
+    vector          >= 0.10     && < 0.11,
+    text            >= 0.11     && < 0.12
+
+source-repository head
+    type: git
+    location: https://github.com/kawu/hist-pl.git
