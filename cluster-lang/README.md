@@ -60,13 +60,15 @@ DONE
   The "adict" library should be built on top of the "dawg"
   library and use its DAWG representation of an automaton
   dictionary.
+* Package the language clustering funcionality into a
+  separate Haskell package.
 
 
 TODO
 ====
 
-* Package the language clustering funcionality into a
-  separate Haskell package.
+* Estimate optimal custom cost parameters on the basis
+  of PoliMorf.  This process should be dictionary-agnostic.
 * Translate raw text into a list of words.  It should be kept
   in mind, that there are some strage artifacts in historical
   texts.
