@@ -14,6 +14,7 @@ import qualified Data.PoliMorf as P
 import qualified NLP.Adict as A
 
 import qualified NLP.ClusterLang as CL
+import           NLP.ClusterLang.SpecialCost (costSpecial)
 
 
 ---------------------------------------
@@ -26,29 +27,47 @@ data EditDist
     = Levenshtein   -- ^ Levenshtein distance.
     | Specialized   -- ^ Distance specialized for morphologically rich languages. 
                     -- Beware, though, it's not a metric!
-    deriving (Eq,Ord,Bounded,Enum,Show,Read,Data,Typeable)
+    deriving (Eq, Ord, Bounded, Enum, Show, Read, Data, Typeable)
 
 
 -- | Translate `EditDist` flag to a cost function.
-costFrom :: EditDist -> A.Cost Char
-costFrom = const A.costDefault
+costFrom :: EditDist -> String -> A.Cost Char
+costFrom Levenshtein _ = A.costDefault
+costFrom Specialized x = costSpecial $ length x
 
 
 -- | Program arguments.
 data CLArgs = CLArgs
     { minPts    :: Int
-    , eps       :: Double
-    , editDist  :: EditDist
-    , output    :: FilePath }
+    , baseEps   :: Double
+    , epsMax    :: Double
+    , dist      :: EditDist }
     deriving (Data, Typeable, Show)
+
+
+-- | Epsilon parameter for the given word.
+eps :: CLArgs -> String -> Double
+eps CLArgs{..} x =
+    let n = fromIntegral (length x)
+    in  min epsMax (baseEps * n)
+
+
+-- | Create clustering configuration from program arguments.
+configFrom :: CLArgs -> String -> CL.Conf
+configFrom cls@CLArgs{..} x = CL.Conf
+    { CL.minPts = minPts
+    , CL.eps    = eps cls x
+    , CL.cost   = costFrom dist x }
 
 
 clArgs :: CLArgs
 clArgs = CLArgs
     { minPts    = 3 &= help "Minimum number of points required to form a cluster"
-    , eps       = 1.0 &= help "A parameter used to identify neighbors of an element"
-    , editDist  = Levenshtein &= help "Type of edit distance"
-    , output    = def &= argPos 0 &= typ "OUTPUT-FILE" }
+    , baseEps   = 0.1 &= help
+        "A parameter used to identify neighbors of an element"
+    , epsMax    = 2.0 &= help
+        "A parameter used to identify neighbors of an element"
+    , dist      = Levenshtein &= help "Type of edit distance" }
     &= verbosity
     &= summary "Cluster language"
     &= program "cluster-lang"
@@ -64,12 +83,9 @@ main = exec =<< cmdArgs clArgs
 
 
 exec :: CLArgs -> IO ()
-exec CLArgs{..} = do
+exec cls = do
+    let cfg = configFrom cls
     xs <- map (T.unpack . P.form)
         . P.parsePoliMorf <$> L.getContents
-    let cfg = CL.Conf
-            { CL.minPts = minPts
-            , CL.eps = eps
-            , CL.cost = costFrom editDist }
     forM_ (CL.cluster cfg xs) $ \(x, y) -> do
         putStr x >> putStr " => " >> putStrLn y

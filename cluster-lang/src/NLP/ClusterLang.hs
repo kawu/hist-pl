@@ -20,7 +20,7 @@ import qualified Data.DAWG.Static as D
 import qualified NLP.Adict as A
 
 import qualified NLP.ClusterLang.DisjointSet as DS
-import qualified NLP.ClusterLang.DBSCAN as DB
+-- import qualified NLP.ClusterLang.DBSCAN as DB
 
 
 -- | Clustering configuration.
@@ -33,10 +33,10 @@ data Conf = Conf {
     , cost      :: A.Cost Char }
 
 
--- | Cluster the input set w.r.t. the DBSCAN configuration
--- and the given cost function.
-cluster :: Conf -> [String] -> [(String, String)]
-cluster Conf{..} xs
+-- | Cluster the input list w.r.t. the clustering configuration.
+-- Configuration may vary depending on the query word.
+cluster :: (String -> Conf) -> [String] -> [(String, String)]
+cluster mkConf xs
     = catMaybes $ map (\(i, j) ->
         (,) <$> byID i <*> byID j)
     $ sort $ catMaybes
@@ -45,27 +45,22 @@ cluster Conf{..} xs
   where
     -- Convert input to weighted DAWG
     dawg = D.weigh (D.fromLang xs)
+    -- Retrieve word given its DAWG index.
+    byID = flip D.byIndex dawg
+
     -- Define function for identifying neighborhood.
     -- The function works on word identifiers.
     epsNei i = catMaybes
-        [ D.index (_1 y) dawg
+        [ D.index (let (a, _, _) = y in a) dawg
         | x <- maybeToList (D.byIndex i dawg)
-        , y <- A.findAll cost eps (V.fromList x) dawg ]
-    -- Run DBSCAN on DAWG elements (or rather, their identifiers).
-    dbCfg = DB.Conf { DB.minPts = minPts, DB.epsNei = epsNei }
-    disj  = DB.dbscan dbCfg (D.size dawg)
+        , let Conf{..} = mkConf x
+        , y <- atLeast minPts $
+            A.findAll cost eps (V.fromList x) dawg ]
+    atLeast n ys = if length ys >= n then ys else []
+
+    -- Compute the disjoint-set forest on the basis of the epsNei function.
+    -- If the configuration `Conf` is constant, it works like DBSCAN.
+    disjointSet = let k = D.size dawg in DS.fromList k
+        [(i, j) | i <- [0..k-1], j <- epsNei i]
     -- Look for an equivalent class element of the given element.
-    eqCls = flip DS.lookup disj
-    -- Retrive word given its DAWG index.
-    byID = flip D.byIndex dawg
-    -- First element of a triple.
-    _1 (x, _, _) = x
-
-
--- main :: IO ()
--- main = do
---     xs <- map (T.unpack . P.form)
---         . P.parsePoliMorf <$> L.getContents
---     let cfg = Conf {minPts = 3, eps = 1.0, cost = A.costDefault}
---     forM_ (cluster cfg xs) $ \(x, y) -> do
---         putStr x >> putStr " => " >> putStrLn y
+    eqCls = flip DS.lookup disjointSet
