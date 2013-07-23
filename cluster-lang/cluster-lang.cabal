@@ -1,4 +1,4 @@
-name:               lang-cluster
+name:               cluster-lang
 version:            0.1.0
 synopsis:           Language clustering
 description:
@@ -12,7 +12,7 @@ author:             Jakub Waszczuk
 maintainer:         waszczuk.kuba@gmail.com
 stability:          experimental
 category:           Natural Language Processing
-homepage:           https://github.com/kawu/hist-pl/tree/master/lang-cluster
+homepage:           https://github.com/kawu/hist-pl/tree/master/cluster-lang
 build-type:         Simple
 
 library
@@ -33,7 +33,7 @@ library
     primitive       >= 0.5      && < 0.6
   ghc-options: -Wall
 
--- executable lang-cluster
+-- executable cluster-lang
 --   hs-source-dirs: src
 --   main-is: Main.hs
 -- 
