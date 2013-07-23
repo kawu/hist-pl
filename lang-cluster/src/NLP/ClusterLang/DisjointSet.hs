@@ -4,7 +4,7 @@
 -- | Disjoint-set forest data structure for integer {0..k} ranges.
 
 
-module DisjointSet
+module NLP.ClusterLang.DisjointSet
 ( 
 -- * Mutable
   DisjSetM
@@ -19,8 +19,7 @@ module DisjointSet
 ) where
 
 import           Prelude hiding (lookup)
-import           System.IO.Unsafe (unsafePerformIO)
--- import           Data.Int (Int32)
+-- import           System.IO.Unsafe (unsafePerformIO)
 import           Control.Applicative ((<$>))
 import           Control.Monad (forM_, guard, void)
 import qualified Control.Monad.ST as ST

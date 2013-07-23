@@ -2,7 +2,8 @@ name:               lang-cluster
 version:            0.1.0
 synopsis:           Language clustering
 description:
-    Language clustering
+    Language clustering on the basis of an edit distance
+    string metric and the DBSCAN algorithm.
 license:            BSD3
 license-file:       LICENSE
 cabal-version:      >= 1.6
@@ -14,10 +15,13 @@ category:           Natural Language Processing
 homepage:           https://github.com/kawu/hist-pl/tree/master/lang-cluster
 build-type:         Simple
 
-executable lang-cluster
+library
   hs-source-dirs: src
-  main-is: Main.hs
-
+  exposed-modules: 
+    NLP.ClusterLang
+  other-modules:
+    NLP.ClusterLang.DisjointSet,
+    NLP.ClusterLang.DBSCAN
   build-depends:
     base            >= 4        && < 5,
     dawg            >= 0.11     && < 0.12,
@@ -27,6 +31,21 @@ executable lang-cluster
     text            >= 0.11     && < 0.12,
     transformers    >= 0.3      && < 0.4,
     primitive       >= 0.5      && < 0.6
+  ghc-options: -Wall
+
+-- executable lang-cluster
+--   hs-source-dirs: src
+--   main-is: Main.hs
+-- 
+--   build-depends:
+--     base            >= 4        && < 5,
+--     dawg            >= 0.11     && < 0.12,
+--     adict           >= 0.4      && < 0.5,
+--     polimorf        >= 0.7.3    && < 0.8,
+--     vector          >= 0.10     && < 0.11,
+--     text            >= 0.11     && < 0.12,
+--     transformers    >= 0.3      && < 0.4,
+--     primitive       >= 0.5      && < 0.6
 
 source-repository head
     type: git
