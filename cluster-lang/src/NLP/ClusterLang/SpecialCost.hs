@@ -29,7 +29,8 @@ costSpecial n =
     -- Insert
     insert = const 1
 
-    -- Delete  
+    -- Delete
+    -- TODO: We probably don't need this right now.
     delete x | isPunctuation x = 0.5
              | otherwise       = 1
 

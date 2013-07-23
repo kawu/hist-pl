@@ -38,21 +38,6 @@ Let's start with a rather simple solution:
   a particular word.
 
 
-Parameter estimation
---------------------
-
-According to wikipedia, the MinPts parameter (minimum number
-of elements in a cluster) should be greater than 1.
-The higher value of MinPts, the more dependable clusters
-will be (supposedly) found by the clustering algorithm.
-
-For a given metric, the Eps parameter (size of a relevant
-neighborhood) can be determined on the basis of an existing
-clustering of the contemporary Polish language (or, to be more
-precise, the clustering present in the morphological dictionary
-of Polish, PoliMorf).  Think about it.
-
-
 DONE
 ====
 
@@ -67,8 +52,8 @@ DONE
 TODO
 ====
 
-* Estimate optimal custom cost parameters on the basis
-  of PoliMorf.  This process should be dictionary-agnostic.
+* Estimate custom cost parameters on the basis of PoliMorf.
+  The process should be dictionary-agnostic.
 * Translate raw text into a list of words.  It should be kept
   in mind, that there are some strage artifacts in historical
   texts.
@@ -84,6 +69,51 @@ TODO
   and we can merge it with the automatically acquired
   one.  This has a low priority and would be of rather
   theoretical value right now, though.
+
+
+Parameter estimation
+--------------------
+
+According to wikipedia, the MinPts parameter (minimum number
+of elements in a cluster) should be greater than 1.
+The higher value of MinPts, the more dependable clusters
+will be (supposedly) found by the clustering algorithm.
+
+For a given metric, the Eps parameter (size of a relevant
+neighborhood) can be determined on the basis of an existing
+clustering of the contemporary Polish language (or, to be more
+precise, the clustering present in the morphological dictionary
+of Polish, PoliMorf).  Think about it.
+
+Parameters
+----------
+
+We should consider the following set of parameters,
+presented in order of decreasing importance:
+* MinPts DBSCAN parameter.
+* BaseEps and epsMax parameters.
+* Position modifier, contolled with two parameters.
+  The first one determines, from which position the
+  modifier starts to tilt down.  The second one --
+  to what value the modifier tilts at the end of the
+  word.  Perhaps we should replace these two parameters
+  with only one, at first, by assuming that the modifier
+  starts to tilt down from the first position.
+* Weight of substitution between similar characters.
+* Weight of substitution between lower/upper version
+  of the same character.
+
+
+Evaluation
+----------
+
+In order to determine optimal parameter values, we need to
+be able to perform evaluation on an existing clustering.
+In our case we will use PoliMorf.
+
+A simple metric can be used for evaluation, a metric which
+counts the number of (in)correctly assigned equiv. relation
+elements.
 
 
 Possible extensions
