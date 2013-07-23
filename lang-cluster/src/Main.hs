@@ -49,8 +49,7 @@ cluster Conf{..} xs
     = catMaybes $ map (\(i, j) ->
         (,) <$> byID i <*> byID j)
     $ sort $ catMaybes
-        -- [ (,) <$> eqCls i <*>  pure i
-        [ (,) <$> pure i <*>  pure i
+        [ (,) <$> eqCls i <*> pure i
         | i <- [0 .. D.size dawg - 1] ]
   where
     -- Convert input to weighted DAWG

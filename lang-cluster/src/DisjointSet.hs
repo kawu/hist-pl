@@ -19,11 +19,12 @@ module DisjointSet
 ) where
 
 import           Prelude hiding (lookup)
+import           System.IO.Unsafe (unsafePerformIO)
 -- import           Data.Int (Int32)
 import           Control.Applicative ((<$>))
 import           Control.Monad (forM_, guard, void)
 import qualified Control.Monad.ST as ST
-import           Control.Monad.ST (ST)
+import           Control.Monad.Primitive
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Class (lift)
 import qualified Data.Vector.Unboxed as U
@@ -43,7 +44,7 @@ data DisjSetM s = DisjSetM
 
 -- | Construct a new disjoint set from a {0 .. k-1} set, where
 -- 'k' is the given argument.
-new :: Int -> ST s (DisjSetM s)
+new :: PrimMonad m => Int -> m (DisjSetM (PrimState m))
 new k = do
     parent <- UM.new k
     forM_  [0..k-1] $ \i ->
@@ -53,13 +54,13 @@ new k = do
 
 
 -- | Create an equivalence relation between x and y.
-union :: Int -> Int -> DisjSetM s -> ST s ()
+union :: (Functor m, PrimMonad m) => Int -> Int -> DisjSetM (PrimState m) -> m ()
 union i j disj@DisjSetM{..} = void $ runMaybeT $ do
     x  <- lookupMaybeT i disj
     y  <- lookupMaybeT j disj
-    rx <- lift $ UM.unsafeRead rank i
-    ry <- lift $ UM.unsafeRead rank j
-    guard $ rx /= ry
+    guard $ x /= y
+    rx <- lift $ UM.unsafeRead rank x
+    ry <- lift $ UM.unsafeRead rank y
     lift $ case compare rx ry of
         LT  -> UM.unsafeWrite parent y x
         GT  -> UM.unsafeWrite parent x y
@@ -69,7 +70,7 @@ union i j disj@DisjSetM{..} = void $ runMaybeT $ do
 
 
 -- | Retrieve equivalence representant for the given element.
-lookupMaybeT :: Int -> DisjSetM s -> MaybeT (ST s) Int
+lookupMaybeT :: PrimMonad m => Int -> DisjSetM (PrimState m) -> MaybeT m Int
 lookupMaybeT i disj@DisjSetM{..} = do
     let n = UM.length rank
     guard $ i >= 0 || i < n
@@ -77,7 +78,7 @@ lookupMaybeT i disj@DisjSetM{..} = do
 
 
 -- | Retrieve equivalence representant for the given element.
-lookupUnsafe :: Int -> DisjSetM s -> ST s Int
+lookupUnsafe :: PrimMonad m => Int -> DisjSetM (PrimState m) -> m Int
 lookupUnsafe i disj@DisjSetM{..} = do
     par <- UM.unsafeRead parent i
     if i == par
