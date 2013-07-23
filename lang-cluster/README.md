@@ -53,13 +53,35 @@ precise, the clustering present in the morphological dictionary
 of Polish, PoliMorf).  Think about it.
 
 
-TODO
+DONE
 ====
 
 * Currently, the "dawg" and "adict" libraries are separate.
   The "adict" library should be built on top of the "dawg"
   library and use its DAWG representation of an automaton
   dictionary.
+
+
+TODO
+====
+
+* Package the language clustering funcionality into a
+  separate Haskell package.
+* Translate raw text into a list of words.  It should be kept
+  in mind, that there are some strage artifacts in historical
+  texts.
+  For example, `<`, `>` and `{`, `}` characters are used to
+  represent some uncertain (on the level of OCR) cases (e.g.
+  "spu<ś>ci").
+  We can either translate such cases to normal text form
+  or just ignore them. 
+* Adding contexts to individual dictionary entries on the
+  basis of a textual data.
+* Merging two dictionaries.  We have an LMF dictionary
+  constructed on the basis of the Reczek's dictionary
+  and we can merge it with the automatically acquired
+  one.  This has a low priority and would be of rather
+  theoretical value right now, though.
 
 
 Possible extensions
