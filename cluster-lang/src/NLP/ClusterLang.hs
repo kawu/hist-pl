@@ -12,14 +12,10 @@ module NLP.ClusterLang
 
 
 import           Control.Applicative (pure, (<$>), (<*>))
--- import           Control.Monad (forM_)
 import           Data.Maybe (catMaybes, maybeToList)
 import           Data.List (sort)
 import qualified Data.Vector as V
--- import qualified Data.Text as T
--- import qualified Data.Text.Lazy.IO as L
 
--- import qualified Data.PoliMorf as P
 import qualified Data.DAWG.Static as D
 import qualified NLP.Adict as A
 
