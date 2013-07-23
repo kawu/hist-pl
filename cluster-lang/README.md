@@ -111,9 +111,15 @@ In order to determine optimal parameter values, we need to
 be able to perform evaluation on an existing clustering.
 In our case we will use PoliMorf.
 
-A simple metric can be used for evaluation, a metric which
-counts the number of (in)correctly assigned equiv. relation
-elements.
+Our goal is to compare a clustering with a reference clustering 
+and determine how similar both clusterings are.  The greater
+similarity between both clusterings, the better evaluation
+result should be obtained.
+
+Mathematically, clustering is an equivalence relation defined
+w.r.t the set of words `W`.  So we have two relations (subsets
+of `WxW`) and, in order to compare them, we can e.g. compute
+the size of symetric difference between them.
 
 
 Possible extensions
