@@ -134,6 +134,7 @@ It can be easily seen that individual clusters are internally very "dense".
 They are also similar to each other, but not so much.
 
 Let's analyse the 'Abba' cluster:
+
     Abba =>      Abby Abbą Abbę Abbo
     Abby => Abba      Abbą Abbę Abbo
     Abbą => Abba Abby      Abbę Abbo
