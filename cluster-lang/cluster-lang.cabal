@@ -21,6 +21,7 @@ library
     NLP.ClusterLang
   other-modules:
     NLP.ClusterLang.DisjointSet,
+    NLP.ClusterLang.EquivRel,
     NLP.ClusterLang.SpecialCost
   build-depends:
     base            >= 4        && < 5,
