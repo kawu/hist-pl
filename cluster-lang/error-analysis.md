@@ -62,13 +62,18 @@ Example 1
     Abbą
     Abbę
 
-### Embeded clusters
+### Embeded clusters:
+
+
+#### Abba
 
     Abba
     Abby
     Abbą
     Abbę
     Abbo
+
+#### Abbas
     
     Abbas
     Abbasa
@@ -80,6 +85,10 @@ Example 1
     Abbasowi
     Abbasowie
     Abbasy
+    Abbasów
+
+#### Abbasyda
+
     Abbasyda
     Abbasydach
     Abbasydami
@@ -91,7 +100,8 @@ Example 1
     Abbasydów
     Abbasydą
     Abbasydę
-    Abbasów
+
+#### Abbot
     
     Abbot
     Abbota
@@ -103,6 +113,8 @@ Example 1
     Abbotowie
     Abboty
     Abbotów
+
+#### Abbott
     
     Abbott
     Abbotta
@@ -115,5 +127,19 @@ Example 1
     Abbotty
     Abbottów
 
-Where the two last clusters could be joined, probably.
-At least, it wouldn't look like a serious error.
+Analysis
+--------
+
+It can be easily seen that individual clusters are internally very "dense".
+They are also similar to each other, but not so much.
+
+Let's analyse the 'Abba' cluster:
+    Abba =>      Abby Abbą Abbę Abbo
+    Abby => Abba      Abbą Abbę Abbo
+    Abbą => Abba Abby      Abbę Abbo
+    Abbę => Abba Abby Abbą      Abbo
+    Abbo => Abba Abby Abbą Abbę
+
+It's a clique with respect to the levenshtein distance function!
+Unfortunately, our clustering method doesn't take this on acount
+in any way...
