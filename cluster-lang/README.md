@@ -156,7 +156,7 @@ each ancestor of `v`.  But, unfortunately, we cannot do that
 easily, because the disjoint-set forest is flattened and a
 parent of `v` always points two the equivalence class representant!
 Therefore, we would get only relations between elements and their
-class representants that way.
+class representants this way.
 
 A solution to this problem would be to not to flatten the
 disjoint-set forest at all.  It would be a little less
@@ -184,6 +184,66 @@ the same equivalence class (i.e. have the same representant).
 Computational complexity of the method described above is
 proportional to the size of the equivalence relations which
 can be quadratic with respect to the size of `W`.
+
+
+Comparing equivalence relations v2
+----------------------------------
+
+Perhaps we can come up with another measure of similarity
+between relations.  A measure which can be computed in
+a quicker way.
+
+### Proposition
+
+We can try to compute the number of clusters in a reference
+relation corresponding to each cluster in the computed relation.
+Than we sum up the obtained numbers and get the final result.
+
+To find clusters in a reference relation corresponding to
+a given cluster, we:
+* Enumerate over all elements of the cluster and, for each element,
+* Determine cluster of this element in the second relation.
+
+Simple!  We only have to be able to enumerate over all elements
+of the chosen cluster in a row.  For that, we may need a different
+representation of a cluster.
+
+### Direction 
+
+The process above can be performed in two directions -- using the
+reference clustering as the second relation, or using the computed
+clustering as the second relation.  To compute the final similarity
+measure value, we should perform both computations, but -- keeping
+in mind, that it is more important to not to construct big clusters
+consisting of several reference clusters -- it might be a good idea
+to assign different weights to both versions.
+
+
+Data representation of an equalivalence relation
+------------------------------------------------
+
+From the "typological" point of view, it's just a
+    
+    type EqRel = Set (Set Word),
+
+where all sets are mutually disjoint. In a file we can
+represent a relation as an empty-line-separated sections
+containing subsequent clusters.
+
+### Application-level representation
+
+On the level of application we will need a more efficient
+representation of an equivalence relation.
+It will also need to provide the folowing operations: 
+* Enumerate over relation (gives a list of clusters),
+* Enumerate over a chosen cluster,
+* Find relation corresponding to a chosen word (if present).
+
+First of all, we can encode all words using a DAWG. 
+Than, since we know the number of words `N`, and to each
+word a unique number from the `{0..N-1}` domain is assigned,
+we can keep info about the clustering in an array of size `N`.
+
 
 
 Misc
