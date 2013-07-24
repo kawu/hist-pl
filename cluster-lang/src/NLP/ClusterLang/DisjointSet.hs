@@ -14,18 +14,23 @@ module NLP.ClusterLang.DisjointSet
 
 -- * Immutable
 , DisjSet
+, size
 , fromList
+, toList
 , lookup
 ) where
 
 import           Prelude hiding (lookup)
--- import           System.IO.Unsafe (unsafePerformIO)
-import           Control.Applicative ((<$>))
+import           Control.Applicative (pure, (<$>), (<*>))
 import           Control.Monad (forM_, guard, void)
 import qualified Control.Monad.ST as ST
 import           Control.Monad.Primitive
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Class (lift)
+import           Data.Maybe (catMaybes)
+import           Data.List (sort, groupBy)
+import           Data.Function (on)
+import qualified Data.Set as S
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as UM
 
@@ -97,6 +102,11 @@ lookupUnsafe i disj@DisjSetM{..} = do
 newtype DisjSet = DisjSet { leader :: U.Vector Int }
 
 
+-- | Size of a disjoint-set forest.
+size :: DisjSet -> Int
+size = U.length . leader
+
+
 -- | Construct a disjoint set for a {0 .. k-1} set, from a list
 -- of (x, y) equivalence relation pairs.
 fromList
@@ -115,10 +125,20 @@ fromList k xs = ST.runST $ do
     DisjSet <$> U.freeze (parent disj)
 
 
+-- | Convert disjoint-set to a list of clusters.
+toList :: DisjSet -> [[Int]]
+toList disj = fromPairs $ catMaybes
+    [ (,) <$> lookup i disj <*> pure i
+    | i <- [0 .. size disj - 1] ]
+  where
+    fromPairs = map mergeGrp . groupBy ((==) `on` fst) . sort
+    mergeGrp = nub . concatMap asList
+    asList (x, y) = [x, y]
+    nub = S.toList . S.fromList
+
+
 -- | Lookup equivalent class representant for the given element.
 lookup :: Int -> DisjSet -> Maybe Int
-lookup i DisjSet{..} = if i >= 0 && i < n
+lookup i disj@DisjSet{..} = if i >= 0 && i < size disj
     then Just (leader U.! i)
     else Nothing
-  where
-    n = U.length leader

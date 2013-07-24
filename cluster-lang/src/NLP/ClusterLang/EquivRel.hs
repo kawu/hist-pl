@@ -12,7 +12,7 @@ module NLP.ClusterLang.EquivRel
 , EquivRel
 
 -- * Build
-, fromPairs
+, fromList
 
 -- * Query
 , elemNum
@@ -29,8 +29,6 @@ module NLP.ClusterLang.EquivRel
 
 import qualified Control.Monad.ST as ST
 import           Control.Monad (forM_)
-import           Data.Function (on)
-import           Data.List (sort, groupBy)
 import qualified Data.Set as S
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
@@ -59,20 +57,9 @@ data EquivRel = EquivRel {
 -----------------------------------------
 
 
--- | Construct clustering from a list of relation pairs.
--- Its not lazy, it will consume all the list at once
--- (since it needs to perform sorting, among others).
-fromPairs :: [(Int, Int)] -> EquivRel
-fromPairs =
-    let nub = S.toList . S.fromList
-        asList (x, y) = [x, y]
-        mergeGrp = nub . concatMap asList
-    in  fromList . map mergeGrp . groupBy ((==) `on` fst) . sort
-
-
--- | Construct clustering from a list of clusters.  The property,
--- that individual clusters are mutually disjoint, is not checked.
--- Neither is the property, that elements cover the relevant domain.
+-- | Construct clustering from a list of clusters.  The property
+-- that individual clusters are mutually disjoint is not checked.
+-- Neither is the property that elements cover the relevant domain.
 -- If any of the clusters is empty, the function will fail with error.
 fromList :: [[Int]] -> EquivRel
 fromList xs = EquivRel

@@ -53,7 +53,7 @@ TODO
 ====
 
 * Estimate custom cost parameters on the basis of PoliMorf.
-  The process should be dictionary-agnostic.
+  The process should be language-agnostic.
 * Translate raw text into a list of words.  It should be kept
   in mind, that there are some strage artifacts in historical
   texts.

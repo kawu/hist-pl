@@ -4,7 +4,7 @@
 
 
 import           Control.Applicative ((<$>))
-import           Control.Monad (forM_)
+-- import           Control.Monad (forM_)
 import           System.Console.CmdArgs
 
 import qualified Data.Text as T
@@ -91,5 +91,4 @@ exec cls = do
     let cfg = configFrom cls
     xs <- map (T.unpack . P.form)
         . P.parsePoliMorf <$> L.getContents
-    forM_ (CL.cluster cfg xs) $ \(x, y) -> do
-        putStr x >> putStr " => " >> putStrLn y
+    L.putStrLn $ CL.showClust $ CL.cluster cfg xs
