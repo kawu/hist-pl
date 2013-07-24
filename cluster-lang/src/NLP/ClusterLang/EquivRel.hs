@@ -17,10 +17,13 @@ module NLP.ClusterLang.EquivRel
 -- * Query
 , elemNum
 , clsNum
-, clsList
+, toList
 -- ** Cluster-wise
 , clsItems
 , repr
+
+-- * Comparison
+, sim
 ) where
 
 
@@ -102,8 +105,19 @@ clsNum = V.length . clVect
 
 
 -- | List of relation equivalence classes (clusters).
-clsList :: EquivRel -> [ClsID]
-clsList eqRel = [0 .. clsNum eqRel - 1]
+toList :: EquivRel -> [[Int]]
+toList = map U.toList . V.toList . clVect
+
+
+-- -- | List of relation equivalence classes (clusters).
+-- clsList :: EquivRel -> [ClsID]
+-- clsList eqRel = [0 .. clsNum eqRel - 1]
+
+
+-- | Determine cluster of a given element.
+clsOf :: EquivRel -> Int -> ClsID
+clsOf eq i = clFor eq U.! i
+{-# INLINE clsOf #-}
 
 
 -----------------------------------------
@@ -119,3 +133,27 @@ clsItems EquivRel{..} = U.toList . (clVect V.!)
 -- | Representant of a class.
 repr :: EquivRel -> ClsID -> Int
 repr EquivRel{..} = U.head . (clVect V.!)
+
+
+-----------------------------------------
+-- Comparison
+-----------------------------------------
+
+
+-- | Similarity measure between both relations.
+sim
+    :: EquivRel     -- ^ Source cluster
+    -> EquivRel     -- ^ Reference relation
+    -> Int
+sim xr yr = sum
+    [ correspNum cls yr
+    | cls <- toList xr ]
+
+
+-- Compute the number of reference clusters corresponding to a
+-- cluster from the source relation.
+correspNum
+    :: [Int]        -- ^ Source cluster
+    -> EquivRel     -- ^ Reference relation
+    -> Int
+correspNum xs eqRel = S.size $ S.fromList $ map (clsOf eqRel) xs
