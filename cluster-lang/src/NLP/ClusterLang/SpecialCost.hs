@@ -1,6 +1,12 @@
+-- TODO: We could store the cost in a matrix form and
+-- memoize those forms for different word lengths, e.g.
+
+
 module NLP.ClusterLang.SpecialCost
 ( costSpecial
+, costPosMod
 ) where
+
 
 import           Data.Char
 import qualified Data.Map as M
@@ -14,8 +20,7 @@ lowerEqWeight :: Double
 lowerEqWeight = 0.5
 
 
--- TODO: We can store the cost in a matrix form and
--- memoize those forms for different word lengths.
+-- | A cost with special rules.
 costSpecial :: Int -> A.Cost Char
 costSpecial n =
     
@@ -73,3 +78,44 @@ substMatrix = M.fromList $ concatMap (uncurry mkGroup)
           , ((toUpper x, y), w + lowerEqWeight)
           , ((x, toUpper y), w + lowerEqWeight) ]
         | x <- xs , y <- xs , x /= y ]
+
+
+-- | A standrad cost with additional position modifier.
+costPosMod :: Int -> A.Cost Char
+costPosMod n = A.Cost
+    { A.insert  = \k x   -> posMod k * insert x
+    , A.delete  = \k x   -> posMod k * delete x
+    , A.subst   = \k x y -> posMod k * subst x y }
+  where
+    insert = const 1
+    delete = const 1
+    subst x y
+        | x == y    = 0
+        | otherwise = 1
+    posMod k
+        | k <= n_2  = 1
+        | otherwise = (n - k + 1) ./. (n - n_2 + 1)
+    x ./. y = fromIntegral x / fromIntegral y
+    n_2 = (n + 1) `div` 2
+
+
+-- -- | A standrad cost with additional position modifier.
+-- costPosMod :: Int -> A.Cost Char
+-- costPosMod n = A.costDefault `mulCost` A.Cost
+--     { A.insert  = \k _   -> posMod k
+--     , A.delete  = \k _   -> posMod k
+--     , A.subst   = \k _ _ -> posMod k }
+--   where
+--     posMod k
+--         | k <= n_2  = 1
+--         | otherwise = (n - k + 1) ./. (n - n_2 + 1)
+--     x ./. y = fromIntegral x / fromIntegral y
+--     n_2 = (n + 1) `div` 2
+-- 
+-- 
+-- -- | Multiply two cost functions.
+-- mulCost :: A.Cost a -> A.Cost a -> A.Cost a
+-- mulCost c c' = A.Cost
+--     { A.insert  = \k x   -> A.insert c k x * A.insert c' k x
+--     , A.delete  = \k x   -> A.delete c k x * A.delete c' k x
+--     , A.subst   = \k x y -> A.subst c k x y * A.subst c' k x y }

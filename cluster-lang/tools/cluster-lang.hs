@@ -14,7 +14,7 @@ import qualified Data.PoliMorf as P
 import qualified NLP.Adict as A
 
 import qualified NLP.ClusterLang as CL
-import           NLP.ClusterLang.SpecialCost (costSpecial)
+import           NLP.ClusterLang.SpecialCost
 
 
 ---------------------------------------
@@ -23,10 +23,13 @@ import           NLP.ClusterLang.SpecialCost (costSpecial)
 
 
 -- | Edit distance type to use.
+-- Beware, that some types do not represent a metric!
 data EditDist
     = Levenshtein   -- ^ Levenshtein distance.
-    | Specialized   -- ^ Distance specialized for morphologically rich languages. 
-                    -- Beware, though, it's not a metric!
+    | Specialized   -- ^ Distance specialized for
+                    -- morphologically rich languages. 
+    | PosMod        -- ^ Standard cost function with
+                    -- additional position modifier.
     deriving (Eq, Ord, Bounded, Enum, Show, Read, Data, Typeable)
 
 
@@ -34,6 +37,7 @@ data EditDist
 costFrom :: EditDist -> String -> A.Cost Char
 costFrom Levenshtein _ = A.costDefault
 costFrom Specialized x = costSpecial $ length x
+costFrom PosMod      x = costPosMod  $ length x
 
 
 -- | Program arguments.

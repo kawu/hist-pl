@@ -99,9 +99,15 @@ presented in order of decreasing importance:
   word.  Perhaps we should replace these two parameters
   with only one, at first, by assuming that the modifier
   starts to tilt down from the first position.
-* Weight of substitution between similar characters.
 * Weight of substitution between lower/upper version
   of the same character.
+* Weight of substitution between similar characters.
+
+The two last propositions (especially the last) seem
+a little controversial.  It's hard to determine, which
+two characters should be treated as similar.
+Perhaps it would be better to disregard this proposition
+in our first experiments.
 
 
 Evaluation
@@ -122,9 +128,67 @@ of `WxW`) and, in order to compare them, we can e.g. compute
 the size of symetric difference between them.
 
 
-Possible extensions
-===================
+Comparing equivalence relations
+-------------------------------
 
-* Use a more general, parametric version of the string metric.
-  Remember, that -- due to the usage of DBSCAN clustering method
-  -- it has to be a real metric!
+### Note
+
+We would like the evaluation function to satisfy
+the following property: it is a serious mistake to
+join multiple lexemes into one lexeme, much more serious
+than getting several lexemes in place of one lexeme.  
+Motivation: if we were to manaully amend clustering
+results, it would be much simpler two join two clusters
+(just a matter of selecting them) than to divide an existing
+one.
+
+Back to our task: how do we compare relations, two
+subsets of `WxW`?  Let's assume, that we will be doing
+computations on a disjoint-set forest data structure.
+
+### Warm-up question
+
+How do we enumerate all relation elements in a disjoint-set forest?
+
+We can do that by going through all `W` elements and -- for
+each element `v in W` -- enumerating all pairs `(v, w)` for
+each ancestor of `v`.  But, unfortunately, we cannot do that
+easily, because the disjoint-set forest is flattened and a
+parent of `v` always points two the equivalence class representant!
+Therefore, we would get only relations between elements and their
+class representants that way.
+
+A solution to this problem would be to not to flatten the
+disjoint-set forest at all.  It would be a little less
+efficiet, but probably imperceptibly so, given that
+most of the time is most likely spent in approximate
+dictionary searching.
+
+###  Difference between disjoint-set forests
+
+In order to compute difference between two sets we find
+all elements in the first set which are not in the second
+one (trivial).  We can enumerate all relation pairs from the
+first disjoint-set forest, we just need to be able to determine
+if a relation pair is an element of the second disjoint-set
+forest.
+
+### Membership
+
+To determine membership of a `(v, w)` pair in a disjoint-set
+forest we just check if both `v` and `w` elements belong to
+the same equivalence class (i.e. have the same representant).
+
+### Caveat
+
+Computational complexity of the method described above is
+proportional to the size of the equivalence relations which
+can be quadratic with respect to the size of `W`.
+
+
+Misc
+====
+
+Parameters, which seemed to be acceptable:
+
+    cluster-lang -m 3 -b 0.1 -e 1 -d posmod
