@@ -133,7 +133,8 @@ Analysis
 It can be easily seen that individual clusters are internally very "dense".
 They are also similar to each other, but not so much.
 
-Let's analyse the 'Abba' cluster:
+Let's analyse the 'Abba' cluster.  The following list presents neighbours
+of distance 1 for each element of the cluster:
 
     Abba =>      Abby Abbą Abbę Abbo
     Abby => Abba      Abbą Abbę Abbo
@@ -142,5 +143,15 @@ Let's analyse the 'Abba' cluster:
     Abbo => Abba Abby Abbą Abbę
 
 It's a clique with respect to the levenshtein distance function!
-Unfortunately, our clustering method doesn't take this on acount
-in any way...
+But, w.r.t. the 'Abbas' cluster, there is only one 1-distance relation:
+
+    Abba => Abbas
+
+While all the other 'Abba' elements are not connected to any other
+'Abbas' elements.  And yet, both clusters are joined in the clustering
+result.
+
+To sum up: the problem with DBSCAN is that it allows different elements of
+the same cluster to be very far from each other, as long as there is
+a connecting path between them.  That is an undesirable feature of this
+clustering method.
