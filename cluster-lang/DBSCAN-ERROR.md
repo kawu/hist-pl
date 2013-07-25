@@ -1,5 +1,5 @@
-Error analysis
-==============
+Error analysis for the DBSCAN algorithm
+=======================================
 
 Here we analyse some typical errors obtained with the following
 set of parameters:
