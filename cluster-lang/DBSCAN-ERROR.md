@@ -151,6 +151,10 @@ While all the other 'Abba' elements are not connected to any other
 'Abbas' elements.  And yet, both clusters are joined in the clustering
 result.
 
+
+Summary
+=======
+
 To sum up: the problem with DBSCAN is that it allows different elements of
 the same cluster to be very far from each other, as long as there is
 a connecting path between them.  That is an undesirable feature of this
