@@ -1,0 +1,33 @@
+name:               hist-pl-collect
+version:            0.1.0
+synopsis:           Collect dictionary from texts 
+description:
+    The library implements functionality intended for
+    constructing LMF dictionaries from texts.
+license:            BSD3
+license-file:       LICENSE
+cabal-version:      >= 1.6
+copyright:          Copyright (c) 2012 IPI PAN
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/hist-pl/tree/master/collect
+build-type:         Simple
+
+library
+  hs-source-dirs:   src
+  exposed-modules:   
+    -- NLP.HistPL.Collect,
+    NLP.HistPL.Collect.Read
+  build-depends:
+    base                    >= 4        && < 5,
+    text                    >= 0.11     && < 0.12,
+    split                   >= 0.2.2    && < 0.3,
+    hist-pl                 >= 0.3.1    && < 0.4
+
+  ghc-options: -Wall
+
+source-repository head
+    type: git
+    location: https://github.com/kawu/hist-pl.git
