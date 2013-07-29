@@ -12,6 +12,8 @@ module NLP.HistPL.Collect.Read
 
 
 import           Prelude hiding (words)
+import           System.Directory (getDirectoryContents)
+import           System.FilePath
 import           Control.Applicative ((<$>))
 import           Data.Function (on)
 import qualified Data.Char as C
@@ -30,7 +32,10 @@ import qualified Data.Text.Lazy.IO as LT
 
 -- | Read collection of documents from the given directory.
 readColl :: FilePath -> IO [FilePath]
-readColl = undefined
+readColl path = do
+    xs <- filter (\x -> not (x `elem` [".", ".."]))
+      <$> getDirectoryContents path
+    return $ map (path </>) xs
 
 
 --------------------------------------------
