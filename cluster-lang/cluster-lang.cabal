@@ -39,7 +39,6 @@ executable cluster-lang
   main-is: cluster-lang.hs
   ghc-options: -Wall
   build-depends:
-    polimorf        >= 0.7.3    && < 0.8,
     cmdargs         >= 0.10     && < 0.11
 
 source-repository head

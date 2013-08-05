@@ -7,10 +7,9 @@ import           Control.Applicative ((<$>))
 -- import           Control.Monad (forM_)
 import           System.Console.CmdArgs
 
-import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 
-import qualified Data.PoliMorf as P
 import qualified NLP.Adict as A
 
 import qualified NLP.ClusterLang as CL
@@ -89,6 +88,5 @@ main = exec =<< cmdArgs clArgs
 exec :: CLArgs -> IO ()
 exec cls = do
     let cfg = configFrom cls
-    xs <- map (T.unpack . P.form)
-        . P.parsePoliMorf <$> L.getContents
-    L.putStrLn $ CL.showClust $ CL.cluster cfg xs
+    xs <- map L.unpack . L.lines <$> L.getContents
+    L.putStrLn $ CL.showClustering $ CL.cluster cfg xs

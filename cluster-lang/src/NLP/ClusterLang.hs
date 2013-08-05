@@ -14,7 +14,7 @@ module NLP.ClusterLang
 , Clust (..)
 , cluster
 -- * Input/output
-, showClust
+, showClustering
 ) where
 
 
@@ -84,9 +84,9 @@ cluster mkConf xs = Clust
 ------------------------------------------
 
 
-showClust :: Clust -> L.Text
-showClust Clust{..} =
+showClustering :: Clust -> L.Text
+showClustering Clust{..} =
     L.unlines $ map showCls $ EQ.toList eqRel
   where
-    showCls cls = L.unlines $ map L.pack $ catMaybes $ map byIndex cls
+    showCls cls = L.unwords $ map L.pack $ catMaybes $ map byIndex cls
     byIndex i = D.byIndex i dawg
