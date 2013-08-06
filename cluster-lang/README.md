@@ -1,5 +1,5 @@
 cluster-lang
-===============
+============
 
 The cluster-lang package implements unsupervised lexeme-clustering
 algorithm based on DBSCAN and edit distance.
