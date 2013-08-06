@@ -9,7 +9,7 @@ Installation
 ============
 
 You will need [Glasgow Haskell Compiler (GHC)][ghc] and the [Cabal][cabal] tool
-to build hist-pl.  The easiest way to get both [GHC][ghc] and [Cabal][cabal]
+to build cluster-lang.  The easiest way to get both [GHC][ghc] and [Cabal][cabal]
 is to install the latest [Haskell Platform][haskell-platform].
 
 To install the latest development version from github run
@@ -67,9 +67,10 @@ process.  Some of the more useful optios are:
 * `--baseeps` and `--epsmax`: DBSCAN `epsilon` parameter for a given
   word is computed as `min(baseeps*n, epsmax)` where `n` is the lenght
   of the word.
-* --dist: Type of edit distance function.  Possible choices are:
+* `--dist`: Type of the edit distance function.  Possible choices are:
   `levenshtein` (default) and `posmod` (position modifier is used
-  to decrease operation costs closer to the end of the word).
+  to decrease costs of edit operations performed closer to the end
+  of the word).
 
 Run `cluster-lang --help` to see the complete list of program arguments.
 
