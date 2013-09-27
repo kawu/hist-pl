@@ -5,7 +5,7 @@
 
 
 import           Control.Applicative ((<$>))
-import           Control.Monad (void, forM_, (<=<))
+import           Control.Monad (forever, void, forM_, (<=<))
 import           Pipes
 import           System.Console.CmdArgs
 import qualified Data.Set as S
@@ -108,7 +108,7 @@ exec Create{..} = do
     -- putStrLn "Reading historical dictionary of Polish..."
     hist <- LMF.readLMF lmfPath
     -- putStrLn "Creating the binary version of the dictionary..."
-    runProxy $ fromListI (addForms poli hist) >-> H.save outPath
+    runEffect $ fromListI (addForms poli hist) >-> H.save outPath
   where
     addForms poli hist =
         [ ( lexEntry
@@ -122,7 +122,7 @@ exec Create{..} = do
 
 exec Print{..} = do
     hpl <- H.open binPath
-    runProxy $ H.load hpl >-> mapMD (L.putStrLn . LMF.showLexEntry . snd)
+    runEffect $ for (H.load hpl) (lift . L.putStrLn . LMF.showLexEntry . snd)
 
 
 exec Analyse{..} = do
