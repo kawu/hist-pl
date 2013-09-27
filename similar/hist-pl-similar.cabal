@@ -12,6 +12,7 @@ homepage:           https://github.com/kawu/hist-pl/tree/master/similar
 build-type:         Simple
 
 library
+  hs-source-dirs:   src
   exposed-modules:    NLP.HistPL.Similar
   other-modules:      NLP.HistPL.Similar.Cost
   build-depends:
