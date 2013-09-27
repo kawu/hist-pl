@@ -3,6 +3,9 @@ module NLP.HistPL.Similar
 ) where
 
 
+import           Control.Arrow (first)
+import           Data.List (minimumBy)
+import           Data.Ord (comparing)
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import qualified Data.Text as T
@@ -23,5 +26,8 @@ lookupSim hpl x th = lookupApprox x th (formMap hpl)
 lookupApprox :: Ord i => T.Text -> Double -> DAWG i a b -> Maybe (T.Text, Double)
 lookupApprox x th dict =
     case A.findAll (costSpecial $ T.length x) th (V.fromList $ T.unpack x) dict of
-        ((y, _, w) :_)  -> Just (T.pack y, w)
-        []              -> Nothing
+        []  -> Nothing
+        ys  -> Just $ first T.pack
+            $ minimumBy (comparing snd)
+            $ map _13 ys
+            where _13 (a, _, c) = (a, c)
