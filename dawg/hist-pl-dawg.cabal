@@ -1,5 +1,5 @@
 name:               hist-pl-dawg
-version:            0.2.0
+version:            0.2.1
 synopsis:           A generic, DAWG-based dictionary
 description:
     A generic dictionary implementation based on directed acyclic word graphs.
@@ -22,7 +22,7 @@ library
                     , text
                     , binary
                     , text-binary
-                    , dawg >= 0.10 && < 0.11
+                    , dawg >= 0.11 && < 0.12
 
   ghc-options: -Wall
 

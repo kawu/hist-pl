@@ -23,7 +23,7 @@ library
       , text
       , binary
       , text-binary
-      , dawg >= 0.10 && < 0.11
+      , dawg >= 0.11 && < 0.12
       , polimorf >= 0.7.1 && < 0.8
       , hist-pl-dawg >= 0.2 && < 0.3
       , hist-pl-lexicon >= 0.6.1 && < 0.7

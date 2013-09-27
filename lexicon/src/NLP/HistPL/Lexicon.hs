@@ -43,7 +43,7 @@
 module NLP.HistPL.Lexicon
 (
 -- * Dictionary
-  HistPL
+  HistPL (..)
 , Code (..)
 -- ** Key
 , Key
