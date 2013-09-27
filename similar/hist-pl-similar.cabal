@@ -1,0 +1,55 @@
+name:               hist-pl-approx
+version:            0.1.0
+cabal-version:      >= 1.6
+synopsis:           Searching for similar forms
+license:            BSD3
+license-file:       LICENSE
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/hist-pl/tree/master/similar
+build-type:         Simple
+
+library
+  exposed-modules:    NLP.HistPL.Similar
+  other-modules:      NLP.HistPL.Similar.Cost
+  build-depends:
+    base            >= 4        && < 5,
+    adict           >= 0.4      && < 0.5,
+    hist-pl         >= 0.3      && < 0.4,
+    containers
+--                     , binary
+--                     , vector
+--                     , text
+--                     , mtl
+--                     , transformers
+--                     , polh-lexicon
+--                     , tokenize
+--                     , transcription
+--                     , adict
+--                     , polish-language-resources
+
+-- Executable polh-test
+--   Hs-Source-Dirs: ., tools
+--   Main-is: polh-test.hs
+--   Build-Depends:      optparse-applicative
+-- 
+-- Executable polh-collect
+--   Hs-Source-Dirs: ., tools
+--   Main-is: polh-collect.hs
+--   Build-Depends:      optparse-applicative
+-- 
+-- Executable polh-extract-contexts
+--   Hs-Source-Dirs: ., tools
+--   Main-is: polh-extract-contexts.hs
+--   Build-Depends:      optparse-applicative
+-- 
+-- Executable polh-collect-contexts
+--   Hs-Source-Dirs: ., tools
+--   Main-is: polh-collect-contexts.hs
+--   Build-Depends:      optparse-applicative
+
+source-repository head
+    type: git
+    location: https://github.com/kawu/hist-pl.git
