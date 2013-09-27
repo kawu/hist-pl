@@ -17,18 +17,11 @@ library
   build-depends:
     base            >= 4        && < 5,
     adict           >= 0.4      && < 0.5,
-    hist-pl         >= 0.3      && < 0.4,
+    hist-pl-lexicon >= 0.6.1    && < 0.7,
+    hist-pl-dawg    >= 0.2      && < 0.3,
+    text            >= 0.11     && < 0.12,
+    vector          >= 0.10     && < 0.11,
     containers
---                     , binary
---                     , vector
---                     , text
---                     , mtl
---                     , transformers
---                     , polh-lexicon
---                     , tokenize
---                     , transcription
---                     , adict
---                     , polish-language-resources
 
 -- Executable polh-test
 --   Hs-Source-Dirs: ., tools
