@@ -6,7 +6,7 @@
 
 import           Control.Applicative ((<$>))
 import           Control.Monad (void, forM_, (<=<))
-import           Control.Proxy
+import           Pipes
 import           System.Console.CmdArgs
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -153,7 +153,7 @@ exec Analyse{..} = do
 ---------------------------------------
 
 
-fromListI :: (Monad m, Proxy p) => [a] -> () -> Producer p (Maybe a) m r
-fromListI xs () = runIdentityP $ do
-    mapM_ (respond . Just) xs
-    forever $ respond Nothing
+fromListI :: (Monad m) => [a] -> Producer (Maybe a) m r
+fromListI xs = do
+    mapM_ (yield . Just) xs
+    forever $ yield Nothing
