@@ -81,10 +81,11 @@ module NLP.HistPL.Lexicon
 import           Prelude hiding (lookup)
 import           Control.Applicative ((<$>))
 import           Control.Arrow (first, second)
-import           Control.Monad (unless, guard)
+import           Control.Monad (unless, guard, (<=<))
 import           Control.Monad.Trans.Maybe (MaybeT (..))
-import           Control.Proxy
-import qualified Control.Proxy.Trans.State as S
+import qualified Control.Monad.Trans.State.Strict as S
+import           Pipes
+import qualified Pipes.Prelude as P
 import           System.FilePath ((</>))
 import           System.Directory
     ( createDirectoryIfMissing, createDirectory, doesDirectoryExist )
@@ -254,11 +255,11 @@ open path = tryOpen path >>=
 
 
 -- | List of dictionary keys.
-dictKeys :: Proxy p => HistPL -> () -> Producer p Key IO ()
-dictKeys hpl () = runIdentityP $ do
+dictKeys :: HistPL -> Producer Key IO ()
+dictKeys hpl = do
     let getPaths = getUsefulContents $ dictPath hpl </> keyDir
     xs <- map parseKey <$> lift getPaths
-    fromListS xs ()
+    each xs
 
 
 -- | Load lexical entry given its key.  Raise error if there
@@ -274,11 +275,11 @@ tryLoadK hpl = tryLoadEntry (dictPath hpl)
 
 
 -- | List of dictionary IDs.
-dictIDs :: Proxy p => HistPL -> () -> Producer p T.Text IO ()
-dictIDs hpl () = runIdentityP $ do
+dictIDs :: HistPL -> Producer T.Text IO ()
+dictIDs hpl = do
     let getPaths = getUsefulContents $ dictPath hpl </> entryDir
     xs <- map T.pack <$> lift getPaths
-    fromListS xs ()
+    each xs
 
 
 -- | Load lexical entry given its ID.  Raise error if there
@@ -342,9 +343,8 @@ withPrefix HistPL{..} x = D.size (D.submap x formMap)
 -- the given directory.  To each entry an additional set of forms can
 -- be assigned.  The stream of entry pairs should be terminated by the
 -- `Nothing` value.
-save :: Proxy p => FilePath -> ()
-     -> Consumer p (Maybe (LexEntry, S.Set T.Text)) IO ()
-save binPath () = runIdentityP $ do
+save :: FilePath -> Consumer (Maybe (LexEntry, S.Set T.Text)) IO ()
+save binPath = do
 
     -- Prepare directory for the dictionary.
     lift $ do
@@ -354,12 +354,12 @@ save binPath () = runIdentityP $ do
         createDirectory $ binPath </> entryDir
         createDirectory $ binPath </> keyDir
 
-    formMap <- S.evalStateP s0 loop
+    formMap <- S.evalStateT loop s0
     lift $ encodeFile (binPath </> formFile) (D.weigh formMap)
 
   where
 
-    loop = request () >>= \x -> case x of
+    loop = lift await >>= \x -> case x of
         Nothing -> D.freeze . fst <$> S.get
         Just (entry, forms) -> do
             key <- getKey entry
@@ -383,7 +383,7 @@ save binPath () = runIdentityP $ do
 
     -- Save binary entry on a disk and update the map of forms.
     saveBin key entry otherForms = do
-        lift $ saveEntry binPath key entry
+        lift $ lift $ saveEntry binPath key entry
         let D.Key{..} = key
             histForms = S.fromList (Util.allForms entry)
             onlyHist  = S.difference histForms otherForms
@@ -398,5 +398,5 @@ save binPath () = runIdentityP $ do
 
 
 -- | A producer of all dictionary entries.
-load :: Proxy p => HistPL -> () -> Producer p (Key, LexEntry) IO ()
-load hpl = dictKeys hpl >-> mapMD (\x -> (x, ) <$> loadK hpl x)
+load :: HistPL -> Producer (Key, LexEntry) IO ()
+load hpl = dictKeys hpl >-> P.mapM (\x -> (x, ) <$> loadK hpl x)

@@ -28,7 +28,7 @@ library
                     , directory
                     , filepath
                     , transformers
-                    , pipes >= 3.3 && < 3.4
+                    , pipes >= 4.0 && < 4.1
                     , dawg >= 0.10 && < 0.11
                     , hist-pl-types >= 0.1 && < 0.2
                     , hist-pl-dawg >= 0.2 && < 0.3
