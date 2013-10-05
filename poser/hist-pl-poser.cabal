@@ -1,0 +1,30 @@
+name:               hist-pl-poser
+version:            0.1.0
+cabal-version:      >= 1.6
+synopsis:           Rule-based POS assignment
+license:            BSD3
+license-file:       LICENSE
+author:             Jakub Waszczuk
+maintainer:         waszczuk.kuba@gmail.com
+stability:          experimental
+category:           Natural Language Processing
+homepage:           https://github.com/kawu/hist-pl/tree/master/poser
+build-type:         Simple
+
+library
+  hs-source-dirs:   src
+  exposed-modules:    NLP.HistPL.Poser
+  other-modules:
+    NLP.HistPL.Poser.Bag,
+    NLP.HistPL.Poser.Entropy,
+    NLP.HistPL.Poser.Rules,
+  build-depends:
+    base            >= 4        && < 5,
+    hist-pl-lmf     >= 0.1      && < 0.2,
+    text            >= 0.11     && < 0.12,
+    parsec,
+    containers
+
+source-repository head
+    type: git
+    location: https://github.com/kawu/hist-pl.git
