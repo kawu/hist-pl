@@ -17,11 +17,13 @@ library
   other-modules:
     NLP.HistPL.Poser.Bag,
     NLP.HistPL.Poser.Entropy,
-    NLP.HistPL.Poser.Rules,
+    NLP.HistPL.Poser.Rules
   build-depends:
     base            >= 4        && < 5,
+    hist-pl-types   >= 0.1      && < 0.2,
     hist-pl-lmf     >= 0.1      && < 0.2,
     text            >= 0.11     && < 0.12,
+    morfeusz        >= 0.4      && < 0.5,
     parsec,
     containers
 
