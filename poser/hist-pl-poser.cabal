@@ -27,6 +27,12 @@ library
     parsec,
     containers
 
+executable hist-pl-poser
+  hs-source-dirs: src, tools
+  main-is: hist-pl-poser.hs
+  build-depends:      base >= 4 && < 5 
+                    , cmdargs
+
 source-repository head
     type: git
     location: https://github.com/kawu/hist-pl.git
