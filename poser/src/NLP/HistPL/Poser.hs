@@ -3,11 +3,11 @@
 
 
 module NLP.HistPL.Poser
-(
+( vote
 ) where
 
 
-import System.IO (hPutStrLn, stderr)
+import System.IO (hPutStrLn, stderr, withFile, IOMode(..))
 import System.Environment (getArgs)
 -- import Codec.Binary.UTF8.String (encodeString, decodeString)
 import Data.Char (isSpace)
@@ -29,6 +29,7 @@ import Text.Parsec
 import Text.Parsec.Text
 
 import qualified NLP.HistPL.Types as H
+import qualified NLP.HistPL.LMF as H
 -- import qualified Text.Polh.Parse as H
 -- import qualified Data.Polh.IO as H
 
@@ -211,6 +212,19 @@ getPosBag lexEntry = do
 --         _ -> []
 --     poss = Bag.mostCommon $ lexPosBag info
 --     getSuffix k x = T.toLower $ T.reverse $ T.take k $ T.reverse x
+
+
+-- | Read entries from the first XML file, perform POS assignment on
+-- each entry, and write entries to the second file also in a form
+-- of an LMF-compatible XML.
+vote :: FilePath -> FilePath -> IO ()
+vote src dst = withFile dst WriteMode $ \h -> do
+    xs <- H.readLMF src
+    forM_ xs $ \x -> do
+        pos <- Bag.mostCommon <$> getPosBag x
+        print (H.text $ H.lemma x, pos)
+        L.hPutStrLn h $ H.showLexEntry $ x { H.pos = pos }
+
 
 -- vote :: FilePath -> L.Text -> IO ()
 -- vote polh input = do
