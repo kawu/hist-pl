@@ -16,7 +16,6 @@ import Control.Applicative ((*>), (<*), (<$>))
 import qualified Control.Applicative as AP
 import Control.Monad (forM, forM_, (>=>))
 import Data.List (intercalate, sortBy)
-import qualified Data.Map as Map
 import Data.Function (on)
 
 
@@ -144,7 +143,7 @@ rules =
 -- | Determine POS from multi-word definition.
 processComplexPhrase :: T.Text -> IO (Bag.Bag T.Text)
 processComplexPhrase phrase = do
-    printRule maybeRule
+    -- printRule maybeRule
     return $ mkBag maybeRule
   where
     maybeRule = R.findMatch rules $ zip parts msds
@@ -154,22 +153,25 @@ processComplexPhrase phrase = do
     mkBag (Just rule) = Bag.fromList [(R.action rule, 1.0)]
     mkBag Nothing = Bag.empty
 
-    printRule maybeRule = case maybeRule of
-        Just rule -> do
-            putStr "[" >> T.putStr (R.name rule) >> putStr "]"
-            putStr " => "
-            T.putStrLn phrase
-        Nothing -> do
-            putStr "[none]"
-            putStr " => "
-            T.putStrLn phrase
+--     printRule maybeRule = case maybeRule of
+--         Just rule -> do
+--             putStr "[" >> T.putStr (R.name rule) >> putStr "]"
+--             putStr " => "
+--             T.putStrLn phrase
+--         Nothing -> do
+--             putStr "[none]"
+--             putStr " => "
+--             T.putStrLn phrase
 
 -- | Determine POS multiset from word.
 phrasePos :: T.Text -> IO (Bag.Bag T.Text)
-phrasePos phrase = do
-    if length (T.splitOn " " phrase) > 1
-        then processComplexPhrase phrase
-        else return $ processSimplePhrase phrase
+phrasePos phrase
+    | T.strip phrase == ""  =
+        return Bag.empty
+    | length (T.splitOn " " phrase) > 1 =
+        processComplexPhrase phrase
+    | otherwise =
+        return $ processSimplePhrase phrase
 
 -- | Remove malformed definitions.
 pruneDefs :: [T.Text] -> IO [T.Text]
@@ -223,24 +225,4 @@ vote src dst = withFile dst WriteMode $ \h -> do
     forM_ xs $ \x -> do
         pos <- Bag.mostCommon <$> getPosBag x
         print (H.text $ H.lemma x, pos)
-        L.hPutStrLn h $ H.showLexEntry $ x { H.pos = pos }
-
-
--- vote :: FilePath -> L.Text -> IO ()
--- vote polh input = do
---     setEncoding utf8	            -- ^ Set Morfeusz encoding
---     let entries = H.parsePolh input
---     forM_ entries $ \entry -> do
---         pos <- Bag.mostCommon <$> getPosBag entry
---         print (H.text $ H.lemma entry, pos)
---         setPos polh (H.lexId entry) pos
--- 
--- setPos :: FilePath -> T.Text -> [T.Text] -> IO ()
--- setPos polh lexId pos =
---     let setIt x lex = lex { H.pos = x }
---     in  H.updateLexEntry_ polh (T.unpack lexId) (setIt pos)
--- 
--- main :: IO ()
--- main = do
---     [srdPath, binPath] <- getArgs
---     vote binPath =<< L.readFile srdPath 
+        L.hPutStr h $ H.showLexEntry $ x { H.pos = pos }
