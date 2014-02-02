@@ -34,7 +34,7 @@ executable hist-pl
                     , cmdargs
                     , bytestring
                     , aeson-pretty >= 0.7 && < 0.8
-                    , pipes >= 4.0 && < 4.1
+                    , pipes >= 4.0 && < 4.2
                     , polimorf >= 0.7.1 && < 0.8
                     , hist-pl-lexicon >= 0.6.1 && < 0.7
                     , hist-pl-fusion >= 0.5.3 && < 0.6
